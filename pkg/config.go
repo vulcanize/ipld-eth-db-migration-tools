@@ -18,11 +18,13 @@ package migration_tools
 
 import "github.com/ethereum/go-ethereum/statediff/indexer/postgres"
 
+// Config struct holds the configuration params for a Migrator
 type Config struct {
 	ReadDB  *postgres.DB
 	WriteDB *postgres.DB
 }
 
+// NewConfig returns a new Config
 func NewConfig() *Config {
 	return &Config{}
 }
