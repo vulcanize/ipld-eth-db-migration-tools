@@ -19,45 +19,82 @@ package migration_tools
 import (
 	"io"
 	"sync"
+
+	"github.com/vulcanize/migration-tools/pkg/interfaces"
 )
 
+// Migrator interface for migrating from v2 DB to v3 DB
 type Migrator interface {
-	Migrate(wg *sync.WaitGroup, tables []TableName, blockHeights <-chan uint64) (chan error, error)
+	Migrate(wg *sync.WaitGroup, tables []TableName, blockRanges <-chan []uint64) (chan []uint64, chan struct{}, chan error)
 	io.Closer
 }
 
+// Service struct underpinning the Migrator interface
 type Service struct {
-	Readers     map[TableName]Reader
-	Writers     map[TableName]Writer
-	Transformer map[TableName]Transformer
+	Readers     map[TableName]interfaces.Reader
+	Writers     map[TableName]interfaces.Writer
+	Transformer map[TableName]interfaces.Transformer
 
 	wg       *sync.WaitGroup
+	gapsChan chan []uint64
 	errChan  chan error
-	quitChan chan struct{}
+	stopChan chan struct{}
 }
 
+// NewMigrator returns a new Migrator from the given Config
 func NewMigrator(conf *Config) Migrator {
 	return &Service{
-		Readers:     make(map[TableName]Reader, numTables),
-		Writers:     make(map[TableName]Writer, numTables),
-		Transformer: make(map[TableName]Transformer, numTables),
-		quitChan:    make(chan struct{}),
+		Readers:     make(map[TableName]interfaces.Reader, numTables),
+		Writers:     make(map[TableName]interfaces.Writer, numTables),
+		Transformer: make(map[TableName]interfaces.Transformer, numTables),
+		gapsChan:    make(chan []uint64),
+		stopChan:    make(chan struct{}),
 		errChan:     make(chan error),
 	}
 }
 
-func (s *Service) Migrate(wg *sync.WaitGroup, tables []TableName, blockHeights <-chan uint64) (chan error, error) {
+// Migrate satisfies Migrator
+// Migrate spins up a goroutine to process the block ranges provided through the blockRanges work chan for the specified tables
+// Migrate returns a channel for emitting gaps and failed ranges, a quitChannel for its goroutine, and a channel for writing out errors
+func (s *Service) Migrate(wg *sync.WaitGroup, tables []TableName, blockRanges <-chan []uint64) (chan []uint64, chan struct{}, chan error) {
 	wg.Add(1)
+	quitChan := make(chan struct{})
 	go func() {
 		defer wg.Done()
 		for {
-
+			select {
+			case rng := <-blockRanges:
+				for _, tableName := range tables {
+					oldModels, gaps, err := s.Readers[tableName].Read(rng)
+					if err != nil {
+						s.errChan <- err
+						s.gapsChan <- rng
+						break
+					}
+					newModels, err := s.Transformer[tableName].Transform(oldModels)
+					if err != nil {
+						s.errChan <- err
+						s.gapsChan <- rng
+					}
+					if err := s.Writers[tableName].Write(newModels); err != nil {
+						s.errChan <- err
+						s.gapsChan <- rng
+					}
+					s.gapsChan <- gaps
+				}
+			case <-s.stopChan:
+				close(quitChan)
+			case <-quitChan:
+				return
+			}
 		}
 	}()
-	return s.errChan, nil
+	return s.gapsChan, quitChan, s.errChan
 }
 
+// Close satisfied io.Closer
+// Close shuts down the Migrator, it quits any/all Migrate goroutines that are currently running
 func (s *Service) Close() error {
-	close(s.quitChan)
+	close(s.stopChan)
 	return nil
 }
