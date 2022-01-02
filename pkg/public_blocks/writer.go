@@ -16,9 +16,22 @@
 
 package public_blocks
 
+import (
+	"github.com/jmoiron/sqlx"
+	"github.com/vulcanize/migration-tools/pkg/interfaces"
+)
+
+// Writer struct for writing v3 DB public.blocks models
 type Writer struct {
+	db *sqlx.DB
 }
 
-func (w *Writer) Write(models []interface{}) error {
+// NewWriter satisfies interfaces.WriterConstructor for public.blocks
+func NewWriter(db *sqlx.DB) interfaces.Writer {
+	return &Writer{db: db}
+}
+
+// Write satisfies interfaces.Writer for public.blocks
+func (w *Writer) Write(models [][]interface{}) error {
 
 }

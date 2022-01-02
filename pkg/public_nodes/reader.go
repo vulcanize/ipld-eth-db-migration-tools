@@ -14,24 +14,24 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package eth_accounts
+package public_blocks
 
-// AccountModelV2 is a db model for an eth state account (decoded value of state leaf node) for v2 DB
-type AccountModelV2 struct {
-	ID          int64  `db:"id"`
-	StateID     int64  `db:"state_id"`
-	Balance     string `db:"balance"`
-	Nonce       uint64 `db:"nonce"`
-	CodeHash    []byte `db:"code_hash"`
-	StorageRoot string `db:"storage_root"`
+import (
+	"github.com/jmoiron/sqlx"
+	"github.com/vulcanize/migration-tools/pkg/interfaces"
+)
+
+// Reader struct for reading v2 DB public.nodes models
+type Reader struct {
+	db *sqlx.DB
 }
 
-// AccountModelV3 is a db model for an eth state account (decoded value of state leaf node) for v3 DB
-type AccountModelV3 struct {
-	HeaderID    string `db:"header_id"`
-	StatePath   []byte `db:"state_path"`
-	Balance     string `db:"balance"`
-	Nonce       uint64 `db:"nonce"`
-	CodeHash    []byte `db:"code_hash"`
-	StorageRoot string `db:"storage_root"`
+// NewReader satisfies interfaces.ReaderConstructor for public.nodes
+func NewReader(db *sqlx.DB) interfaces.Reader {
+	return &Reader{db: db}
+}
+
+// Read satisfies interfaces.Reader for public.nodes
+func (r *Reader) Read(blockHeights []uint64) ([][]interface{}, []uint64, error) {
+
 }

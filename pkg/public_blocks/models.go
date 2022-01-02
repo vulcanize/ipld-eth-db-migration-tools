@@ -16,6 +16,7 @@
 
 package public_blocks
 
+// BlockModel is the v2 and v3 DB model for public.blocks (IPLD blockstore)
 type BlockModel struct {
 	Key  string `db:"key"`
 	Data []byte `db:"data"`

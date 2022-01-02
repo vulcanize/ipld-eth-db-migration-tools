@@ -16,9 +16,22 @@
 
 package public_blocks
 
+import (
+	"github.com/jmoiron/sqlx"
+	"github.com/vulcanize/migration-tools/pkg/interfaces"
+)
+
+// Reader struct for reading v2 DB public.blocks models
 type Reader struct {
+	db *sqlx.DB
 }
 
-func (r *Reader) Read(blockHeights []uint64) (interface{}, []uint64, error) {
+// NewReader satisfies interfaces.ReaderConstructor for public.blocks
+func NewReader(db *sqlx.DB) interfaces.Reader {
+	return &Reader{db: db}
+}
+
+// Read satisfies interfaces.Reader for public.blocks
+func (r *Reader) Read(blockHeights []uint64) ([][]interface{}, []uint64, error) {
 
 }

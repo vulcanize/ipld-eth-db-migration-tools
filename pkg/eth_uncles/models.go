@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package eth_uncles
 
 // UncleModelV2 is the db model for eth.uncle_cids for v2 DB
 type UncleModelV2 struct {

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package eth_storage
 
 // StorageModelV2 is the db model for eth.storage_cids for v2 DB
 type StorageModelV2 struct {

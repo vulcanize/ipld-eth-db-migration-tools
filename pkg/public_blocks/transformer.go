@@ -16,9 +16,18 @@
 
 package public_blocks
 
+import "github.com/vulcanize/migration-tools/pkg/interfaces"
+
+// Transformer for transforming v2 DB public.blocks models to v3 DB models
 type Transformer struct {
 }
 
-func (t *Transformer) Transform(model []interface{}) ([]interface{}, error) {
+// NewTransformer satisfies interfaces.TransformerConstructor for public.blocks
+func NewTransformer() interfaces.Transformer {
+	return &Transformer{}
+}
+
+// Transform satisfies interfaces.Transformer for public.blocks
+func (t *Transformer) Transform(models [][]interface{}) ([][]interface{}, error) {
 
 }

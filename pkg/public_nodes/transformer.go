@@ -14,24 +14,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package eth_accounts
+package public_blocks
 
-// AccountModelV2 is a db model for an eth state account (decoded value of state leaf node) for v2 DB
-type AccountModelV2 struct {
-	ID          int64  `db:"id"`
-	StateID     int64  `db:"state_id"`
-	Balance     string `db:"balance"`
-	Nonce       uint64 `db:"nonce"`
-	CodeHash    []byte `db:"code_hash"`
-	StorageRoot string `db:"storage_root"`
+import "github.com/vulcanize/migration-tools/pkg/interfaces"
+
+// Transformer for transforming v2 DB public.nodes models to v3 DB models
+type Transformer struct {
 }
 
-// AccountModelV3 is a db model for an eth state account (decoded value of state leaf node) for v3 DB
-type AccountModelV3 struct {
-	HeaderID    string `db:"header_id"`
-	StatePath   []byte `db:"state_path"`
-	Balance     string `db:"balance"`
-	Nonce       uint64 `db:"nonce"`
-	CodeHash    []byte `db:"code_hash"`
-	StorageRoot string `db:"storage_root"`
+// NewTransformer satisfies interfaces.TransformerConstructor for public.nodes
+func NewTransformer() interfaces.Transformer {
+	return &Transformer{}
+}
+
+// Transform satisfies interfaces.Transformer for public.nodes
+func (t *Transformer) Transform(models [][]interface{}) ([][]interface{}, error) {
+
 }

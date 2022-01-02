@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package eth_transactions
 
 // TransactionModelV2 is the db model for eth.transaction_cids for v2 DB
 type TransactionModelV2 struct {
