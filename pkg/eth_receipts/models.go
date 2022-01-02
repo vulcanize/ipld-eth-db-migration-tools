@@ -16,8 +16,27 @@
 
 package public_blocks
 
+// ReceiptModelV2 is the db model for eth.receipt_cids for v2 DB
 type ReceiptModelV2 struct {
+	ID           int64  `db:"id"`
+	TxID         int64  `db:"tx_id"`
+	LeafCID      string `db:"leaf_cid"`
+	LeafMhKey    string `db:"leaf_mh_key"`
+	PostStatus   uint64 `db:"post_status"`
+	PostState    string `db:"post_state"`
+	Contract     string `db:"contract"`
+	ContractHash string `db:"contract_hash"`
+	LogRoot      string `db:"log_root"`
 }
 
+// ReceiptModelV3 is the db model for eth.receipt_cids for v3 DB
 type ReceiptModelV3 struct {
+	TxID         string `db:"tx_id"`
+	LeafCID      string `db:"leaf_cid"`
+	LeafMhKey    string `db:"leaf_mh_key"`
+	PostStatus   uint64 `db:"post_status"`
+	PostState    string `db:"post_state"`
+	Contract     string `db:"contract"`
+	ContractHash string `db:"contract_hash"`
+	LogRoot      string `db:"log_root"`
 }

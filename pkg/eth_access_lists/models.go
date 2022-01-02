@@ -16,8 +16,21 @@
 
 package public_blocks
 
+import "github.com/lib/pq"
+
+// AccessListElementModelV2 is the db model for eth.access_list_entry for v2 DB
 type AccessListElementModelV2 struct {
+	ID          int64          `db:"id"`
+	Index       int64          `db:"index"`
+	TxID        int64          `db:"tx_id"`
+	Address     string         `db:"address"`
+	StorageKeys pq.StringArray `db:"storage_keys"`
 }
 
+// AccessListElementModelV3 is the db model for eth.access_list_entry for v3 DB
 type AccessListElementModelV3 struct {
+	Index       int64          `db:"index"`
+	TxID        string         `db:"tx_id"`
+	Address     string         `db:"address"`
+	StorageKeys pq.StringArray `db:"storage_keys"`
 }

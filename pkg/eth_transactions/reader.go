@@ -19,6 +19,6 @@ package public_blocks
 type Reader struct {
 }
 
-func (r *Reader) Read(blockHeight uint64) (interface{}, error) {
+func (r *Reader) Read(blockHeights []uint64) (interface{}, []uint64, error) {
 
 }

@@ -16,8 +16,26 @@
 
 package public_blocks
 
+// StorageModelV2 is the db model for eth.storage_cids for v2 DB
 type StorageModelV2 struct {
+	ID         int64  `db:"id"`
+	StateID    int64  `db:"state_id"`
+	Path       []byte `db:"storage_path"`
+	StorageKey string `db:"storage_leaf_key"`
+	NodeType   int    `db:"node_type"`
+	CID        string `db:"cid"`
+	MhKey      string `db:"mh_key"`
+	Diff       bool   `db:"diff"`
 }
 
+// StorageModelV3 is the db model for eth.storage_cids for v3 DB
 type StorageModelV3 struct {
+	HeaderID   string `db:"header_id"`
+	StatePath  []byte `db:"state_path"`
+	Path       []byte `db:"storage_path"`
+	StorageKey string `db:"storage_leaf_key"`
+	NodeType   int    `db:"node_type"`
+	CID        string `db:"cid"`
+	MhKey      string `db:"mh_key"`
+	Diff       bool   `db:"diff"`
 }

@@ -16,8 +16,30 @@
 
 package public_blocks
 
+// TransactionModelV2 is the db model for eth.transaction_cids for v2 DB
 type TransactionModelV2 struct {
+	ID       int64  `db:"id"`
+	HeaderID int64  `db:"header_id"`
+	Index    int64  `db:"index"`
+	TxHash   string `db:"tx_hash"`
+	CID      string `db:"cid"`
+	MhKey    string `db:"mh_key"`
+	Dst      string `db:"dst"`
+	Src      string `db:"src"`
+	Data     []byte `db:"tx_data"`
+	Type     *uint8 `db:"tx_type"`
 }
 
+// TransactionModelV3 is the db model for eth.transaction_cids for v3 DB
 type TransactionModelV3 struct {
+	HeaderID string `db:"header_id"`
+	Index    int64  `db:"index"`
+	TxHash   string `db:"tx_hash"`
+	CID      string `db:"cid"`
+	MhKey    string `db:"mh_key"`
+	Dst      string `db:"dst"`
+	Src      string `db:"src"`
+	Data     []byte `db:"tx_data"`
+	Type     uint8  `db:"tx_type"`
+	Value    string `db:"value"`
 }

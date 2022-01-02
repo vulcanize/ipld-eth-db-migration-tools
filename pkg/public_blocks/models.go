@@ -16,8 +16,7 @@
 
 package public_blocks
 
-type BlockModelV2 struct {
-}
-
-type BlockModelV3 struct {
+type BlockModel struct {
+	Key  string `db:"key"`
+	Data []byte `db:"data"`
 }

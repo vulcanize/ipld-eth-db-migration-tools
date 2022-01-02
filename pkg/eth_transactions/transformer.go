@@ -19,6 +19,6 @@ package public_blocks
 type Transformer struct {
 }
 
-func (t *Transformer) Transform(blockModel interface{}) (interface{}, error) {
+func (t *Transformer) Transform(model []interface{}) ([]interface{}, error) {
 
 }

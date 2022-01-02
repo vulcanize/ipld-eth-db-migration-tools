@@ -16,8 +16,23 @@
 
 package public_blocks
 
+// UncleModelV2 is the db model for eth.uncle_cids for v2 DB
 type UncleModelV2 struct {
+	ID         int64  `db:"id"`
+	HeaderID   int64  `db:"header_id"`
+	BlockHash  string `db:"block_hash"`
+	ParentHash string `db:"parent_hash"`
+	CID        string `db:"cid"`
+	MhKey      string `db:"mh_key"`
+	Reward     string `db:"reward"`
 }
 
+// UncleModelV3 is the db model for eth.uncle_cids for v3 DB
 type UncleModelV3 struct {
+	HeaderID   string `db:"header_id"`
+	BlockHash  string `db:"block_hash"`
+	ParentHash string `db:"parent_hash"`
+	CID        string `db:"cid"`
+	MhKey      string `db:"mh_key"`
+	Reward     string `db:"reward"`
 }

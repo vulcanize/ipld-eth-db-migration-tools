@@ -16,8 +16,22 @@
 
 package public_blocks
 
+// AccountModelV2 is a db model for an eth state account (decoded value of state leaf node) for v2 DB
 type AccountModelV2 struct {
+	ID          int64  `db:"id"`
+	StateID     int64  `db:"state_id"`
+	Balance     string `db:"balance"`
+	Nonce       uint64 `db:"nonce"`
+	CodeHash    []byte `db:"code_hash"`
+	StorageRoot string `db:"storage_root"`
 }
 
+// AccountModelV3 is a db model for an eth state account (decoded value of state leaf node) for v3 DB
 type AccountModelV3 struct {
+	HeaderID    string `db:"header_id"`
+	StatePath   []byte `db:"state_path"`
+	Balance     string `db:"balance"`
+	Nonce       uint64 `db:"nonce"`
+	CodeHash    []byte `db:"code_hash"`
+	StorageRoot string `db:"storage_root"`
 }

@@ -19,6 +19,6 @@ package public_blocks
 type Writer struct {
 }
 
-func (w *Writer) Write(blockModel interface{}) error {
+func (w *Writer) Write(models []interface{}) error {
 
 }

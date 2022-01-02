@@ -16,8 +16,31 @@
 
 package public_blocks
 
+// LogModelV2 is the db model for eth.logs for v2 DB
 type LogModelV2 struct {
+	ID        int64  `db:"id"`
+	LeafCID   string `db:"leaf_cid"`
+	LeafMhKey string `db:"leaf_mh_key"`
+	ReceiptID int64  `db:"receipt_id"`
+	Address   string `db:"address"`
+	Index     int64  `db:"index"`
+	Data      []byte `db:"log_data"`
+	Topic0    string `db:"topic0"`
+	Topic1    string `db:"topic1"`
+	Topic2    string `db:"topic2"`
+	Topic3    string `db:"topic3"`
 }
 
+// LogModelV3 is the db model for eth.logs for v3 DB
 type LogModelV3 struct {
+	ReceiptID string `db:"rct_id"`
+	LeafCID   string `db:"leaf_cid"`
+	LeafMhKey string `db:"leaf_mh_key"`
+	Address   string `db:"address"`
+	Index     int64  `db:"index"`
+	Data      []byte `db:"log_data"`
+	Topic0    string `db:"topic0"`
+	Topic1    string `db:"topic1"`
+	Topic2    string `db:"topic2"`
+	Topic3    string `db:"topic3"`
 }

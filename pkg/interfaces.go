@@ -17,13 +17,13 @@
 package migration_tools
 
 type Reader interface {
-	Read(blockHeight uint64) (interface{}, error)
+	Read(blockHeights []uint64) ([]interface{}, []uint64, error)
 }
 
 type Writer interface {
-	Write(model interface{}) error
+	Write(models []interface{}) error
 }
 
 type Transformer interface {
-	Transform(model interface{}) interface{}
+	Transform(model []interface{}) ([]interface{}, error)
 }

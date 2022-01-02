@@ -16,8 +16,25 @@
 
 package public_blocks
 
+// StateModelV2 is the db model for eth.state_cids for v2 DB
 type StateModelV2 struct {
+	ID       int64  `db:"id"`
+	HeaderID int64  `db:"header_id"`
+	Path     []byte `db:"state_path"`
+	StateKey string `db:"state_leaf_key"`
+	NodeType int    `db:"node_type"`
+	CID      string `db:"cid"`
+	MhKey    string `db:"mh_key"`
+	Diff     bool   `db:"diff"`
 }
 
+// StateModelV3 is the db model for eth.state_cids for v3 DB
 type StateModelV3 struct {
+	HeaderID string `db:"header_id"`
+	Path     []byte `db:"state_path"`
+	StateKey string `db:"state_leaf_key"`
+	NodeType int    `db:"node_type"`
+	CID      string `db:"cid"`
+	MhKey    string `db:"mh_key"`
+	Diff     bool   `db:"diff"`
 }
