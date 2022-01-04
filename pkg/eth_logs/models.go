@@ -16,6 +16,12 @@
 
 package eth_logs
 
+// LogModelV2WithMeta is the db model for eth.logs for v2 DB with the additional metadata required to convert to v3 model
+type LogModelV2WithMeta struct {
+	TxHash string `db:"tx_hash"`
+	LogModelV2
+}
+
 // LogModelV2 is the db model for eth.logs for v2 DB
 type LogModelV2 struct {
 	ID        int64  `db:"id"`

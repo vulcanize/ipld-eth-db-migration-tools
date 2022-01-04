@@ -16,6 +16,14 @@
 
 package eth_storage
 
+// StorageModelV2WithMeta is the db model for eth.storage_cids for v2 DB
+// with the additional metadata required to convert to the v3 model
+type StorageModelV2WithMeta struct {
+	BlockHash string `db:"block_hash"`
+	StatePath []byte `db:"state_path"`
+	StorageModelV2
+}
+
 // StorageModelV2 is the db model for eth.storage_cids for v2 DB
 type StorageModelV2 struct {
 	ID         int64  `db:"id"`

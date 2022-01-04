@@ -14,24 +14,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package eth_state
 
-import (
-	"github.com/jmoiron/sqlx"
-	"github.com/vulcanize/migration-tools/pkg/interfaces"
+const (
+	PgReadEthStateStr = `SELECT eth.header_cids.block_hash, eth.state_cids.*
+						FROM eth.state_cids
+						INNER JOIN eth.header_cids ON (state_cids.header_id = header_cids.id)
+						WHERE block_number = $1`
+
+	PgWriteEthStateStr = `INSERT INTO eth.state_cids (header_id, state_path, state_leaf_key, node_type, cid, mh_key, diff)
+						VALUES (unnest($1::VARCHAR(66)[]), unnest($2::BYTEA[]), unnest($3::VARCHAR(66)[]),
+						unnest($4::INTEGER[]), unnest($5::TEXT[]), unnest($6::TEXT[]), unnest($7::BOOLEAN[]))`
 )
-
-// Reader struct for reading v2 DB public.blocks models
-type Reader struct {
-	db *sqlx.DB
-}
-
-// NewReader satisfies interfaces.ReaderConstructor for public.blocks
-func NewReader(db *sqlx.DB) interfaces.Reader {
-	return &Reader{db: db}
-}
-
-// Read satisfies interfaces.Reader for public.blocks
-func (r *Reader) Read(blockHeights []uint64) ([][]interface{}, []uint64, error) {
-
-}

@@ -14,10 +14,18 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package eth_storage
 
-// BlockModel is the v2 and v3 DB model for public.blocks (IPLD blockstore)
-type BlockModel struct {
-	Key  string `db:"key"`
-	Data []byte `db:"data"`
-}
+const (
+	PgReadEthStorageStr = `SELECT eth.header_cids.block_hash, eth.state_cids.state_path, eth.storage_cids.*
+							FROM eth.storage_cids
+							INNER JOIN eth.state_cids ON (storage_cids.state_id = state_cids.id)
+							INNER JOIN eth.header_cids ON (state_cids.header_id = header_cids.id)
+							WHERE block_number = $1`
+
+	PgWriteEthStorageStr = `INSERT INTO eth.storage_cids (header_id, state_path, storage_path, storage_leaf_key, node_type,
+							cid, mh_key, diff)
+							VALUES (unnest($1::VARCHAR(66)[]), unnest($2::BYTEA[]), unnest($3::BYTEA[]),
+							unnest($4::VARCHAR(66)[]), unnest($5::INTEGER[]), unnest($6::TEXT[]), unnest($7::TEXT[]),
+							unnest($8::BOOLEAN[]))`
+)

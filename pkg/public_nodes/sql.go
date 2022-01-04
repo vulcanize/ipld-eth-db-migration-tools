@@ -16,22 +16,11 @@
 
 package public_blocks
 
-import (
-	"github.com/jmoiron/sqlx"
-	"github.com/vulcanize/migration-tools/pkg/interfaces"
+const (
+	PgReadNodesStr = `SELECT client_name, genesis_block, network_id, node_id, nodes_chain_id
+						FROM public.nodes`
+
+	PgWriteNodesStr = `INSERT INTO public.nodes (client_name, genesis_block, network_id, node_id, chain_id)
+						VALUES (unnest($1::VARCHAR[]), unnest($2::VARCHAR(66)[]), unnest($3::VARCHAR[]),
+						unnest($4::VARCHAR(128)[]), unnest($5::INTEGER[]))`
 )
-
-// Writer struct for writing v3 DB public.blocks models
-type Writer struct {
-	db *sqlx.DB
-}
-
-// NewWriter satisfies interfaces.WriterConstructor for public.blocks
-func NewWriter(db *sqlx.DB) interfaces.Writer {
-	return &Writer{db: db}
-}
-
-// Write satisfies interfaces.Writer for public.blocks
-func (w *Writer) Write(models [][]interface{}) error {
-
-}

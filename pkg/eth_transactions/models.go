@@ -16,6 +16,14 @@
 
 package eth_transactions
 
+// TransactionModelV2WithMeta is the db model for eth.transaction_cids for v2 DB
+// with the additional metadata required to convert to the v3 model
+type TransactionModelV2WithMeta struct {
+	IPLD      []byte `db:"data"`
+	BlockHash string `db:"block_hash"`
+	TransactionModelV2
+}
+
 // TransactionModelV2 is the db model for eth.transaction_cids for v2 DB
 type TransactionModelV2 struct {
 	ID       int64  `db:"id"`
