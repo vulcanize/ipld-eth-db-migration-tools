@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package public_nodes
 
 import "github.com/vulcanize/migration-tools/pkg/interfaces"
 
@@ -28,6 +28,6 @@ func NewTransformer() interfaces.Transformer {
 }
 
 // Transform satisfies interfaces.Transformer for public.nodes
-func (t *Transformer) Transform(models [][]interface{}) ([][]interface{}, error) {
-
+func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error) {
+	return models, nil, nil
 }

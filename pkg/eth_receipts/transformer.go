@@ -28,6 +28,6 @@ func NewTransformer() interfaces.Transformer {
 }
 
 // Transform satisfies interfaces.Transformer for eth.receipt_cids
-func (t *Transformer) Transform(models [][]interface{}) ([][]interface{}, error) {
+func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error) {
 
 }
