@@ -16,8 +16,10 @@
 
 package migration_tools
 
+// ReadPgStr provides explicit typing for read postgres statements
 type ReadPgStr string
 
+// WritePgStr provides explicit typing for write postgres statements
 type WritePgStr string
 
 const (
@@ -89,46 +91,33 @@ const (
 
 	PgWriteEthStorageStr WritePgStr = `INSERT INTO eth.storage_cids (header_id, state_path, storage_path, storage_leaf_key, node_type,
 							cid, mh_key, diff)
-							VALUES (unnest($1::VARCHAR(66)[]), unnest($2::BYTEA[]), unnest($3::BYTEA[]),
-							unnest($4::VARCHAR(66)[]), unnest($5::INTEGER[]), unnest($6::TEXT[]), unnest($7::TEXT[]),
-							unnest($8::BOOLEAN[]))`
+							VALUES (:header_id, :state_path, :storage_path, :storage_leaf_key, :node_type,
+							:cid, :mh_key, :diff)`
 
 	PgWriteEthStateStr WritePgStr = `INSERT INTO eth.state_cids (header_id, state_path, state_leaf_key, node_type, cid, mh_key, diff)
-						VALUES (unnest($1::VARCHAR(66)[]), unnest($2::BYTEA[]), unnest($3::VARCHAR(66)[]),
-						unnest($4::INTEGER[]), unnest($5::TEXT[]), unnest($6::TEXT[]), unnest($7::BOOLEAN[]))`
+						VALUES (:header_id, :state_path, :state_leaf_key, :node_type, :cid, :mh_key, :diff)`
 
 	PgWriteNodesStr WritePgStr = `INSERT INTO public.nodes (client_name, genesis_block, network_id, node_id, chain_id)
-						VALUES (unnest($1::VARCHAR[]), unnest($2::VARCHAR(66)[]), unnest($3::VARCHAR[]),
-						unnest($4::VARCHAR(128)[]), unnest($5::INTEGER[]))`
+						VALUES (:client_name, :genesis_block, :network_id, :node_id, :chain_id)`
 
 	PgWriteEthReceiptsStr WritePgStr = `INSERT INTO eth.receipt_cids (tx_id, leaf_cid, leaf_mh_key, post_status, post_state,
 								contract, contract_hash, log_root)
-								VALUES (unnest($1::VARCHAR(66)[]), unnest($2::TEXT[]), unnest($3::TEXT[]),
-								unnest($4::INTEGER[]), unnest($5::VARCHAR(66)[]), unnest($6::VARCHAR(66)[]),
-								unnest($7::VARCHAR(66)[]), unnest($8::VARCHAR(66)[]))`
+								VALUES (:tx_id, :leaf_cid, :leaf_mh_key, :post_status, :post_state,
+								:contract, :contract_hash, :log_root)`
 
 	PgWriteEthLogsStr WritePgStr = `INSERT INTO eth.logs_cids (rct_id, leaf_cid, leaf_mh_key, address, index, log_data, topic0,
 							topic1, topic2, topic3)
-							VALUES (unnest($1::VARCHAR(66)[]), unnest($2::TEXT[]), unnest($3::TEXT[]), unnest($4::VARCHAR(66)[]),
-							unnest($5::INTEGER[]), unnest($6::BYTEA[]), unnest($7::VARCHAR(66)[]), unnest($8::VARCHAR(66)[]),
-							unnest($9::VARCHAR(66)[]), unnest($10::VARCHAR(66)[]))`
+							VALUES (:rct_id, :leaf_cid, :leaf_mh_key, :address, :index, :log_data, :topic0,
+							:topic1, :topic2, :topic3)`
 
 	PgWriteEthHeadersStr WritePgStr = `INSERT INTO eth.header_cids (block_number, block_hash, parent_hash, cid, mh_key, td, node_id,
 							reward, state_root, uncle_root, tx_root, receipt_root, bloom, timestamp, times_validated, coinbase)
-							VALUES (unnest($1::BIGINT[]), unnest($2::VARCHAR(66)[]), unnest($3::VARCHAR(66)[]), unnest($4::TEXT[]),
-							unnest($5::TEXT[]), unnest($6::NUMERIC[]), unnest($7::VARCHAR(128)[]), unnest($8::NUMERIC[]),
-							unnest($9::VARCHAR(66)[]), unnest($10::VARCHAR(66)[]), unnest($11::VARCHAR(66)[]), unnest($12::VARCHAR(66)[]),
-							unnest($13::BYTEA[]), unnest($14::BIGINT[]), unnest($15::INTEGER[]), unnest($16::VARCHAR(66)[]))`
+							VALUES (:block_number, :block_hash, :parent_hash, :cid, :mh_key, :td, :node_id, :reward,
+							:state_root, :uncle_root, :tx_root, :receipt_root, :bloom, :timestamp, :times_validated, :coinbase)`
 
 	PgWriteEthAccountsStr WritePgStr = `INSERT INTO eth.state_accounts (header_id, state_path, balance, nonce, code_hash, storage_root)
-							VALUES (unnest($1::VARCHAR(66)[]), unnest($2::BYTEA[]), unnest($3::NUMERIC[]), unnest($4::BIGINT[]),
-							unnest($5::BYTEA[]), unnest($6::VARCHAR(66)[]))`
+							VALUES (:header_id, :state_path, :balance, :nonce, :code_hash, :storage_root)`
 
 	PgWriteAccessListElementsStr WritePgStr = `INSERT INTO eth.access_list_elements (tx_id, index, address, storage_keys)
-									VALUES (unnest($1::VARCHAR(66)[]), unnest($2::INTEGER[]), unnest($3::VARCHAR(66)[]),
-									unnest($4::VARCHAR(66)[][]))`
-
-	PgGapFinderStr = `SELECT s.i AS missing_cmd
-						FROM generate_series($1,$2) s(i)
-						WHERE NOT EXISTS (SELECT 1 FROM eth.header_cids WHERE block_number = s.i)`
+									VALUES (:tx_id, :index, :address, :storage_keys)`
 )
