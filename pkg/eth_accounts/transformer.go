@@ -14,11 +14,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package eth_accounts
 
+import "github.com/vulcanize/migration-tools/pkg/interfaces"
+
+// Transformer struct for transforming v2 DB eth.state_accounts models into v3 DB models
 type Transformer struct {
 }
 
-func (t *Transformer) Transform(model []interface{}) ([]interface{}, error) {
+// NewTransformer satisfies interfaces.TransformerConstructor for eth.state_accounts
+func NewTransformer() interfaces.Transformer {
+	return &Transformer{}
+}
+
+// Transform satisfies interfaces.Transformer for eth.state_accounts
+func (t *Transformer) Transform(models [][]interface{}) ([][]interface{}, error) {
 
 }

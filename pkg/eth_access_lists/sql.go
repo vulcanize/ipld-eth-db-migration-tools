@@ -14,11 +14,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package eth_access_lists
 
-type Reader struct {
-}
+const (
+	PgReadAccessListElementsStr = `SELECT eth.transaction_cids.tx_hash, eth.access_list_elements.*
+									FROM eth.access_list_elements
+									INNER JOIN eth.transaction_cids ON (access_list_elements.tx_id = transaction_cids.id)
+									INNER JOIN eth.header_cids ON (transaction_cids.header_id = header_cids.id)
+									WHERE block_number = $1`
 
-func (r *Reader) Read(blockHeights []uint64) (interface{}, []uint64, error) {
-
-}
+	PgWriteAccessListElementsStr = `INSERT INTO eth.access_list_elements (tx_id, index, address, storage_keys)
+									VALUES (unnest($1::VARCHAR(66)[]), unnest($2::INTEGER[]), unnest($3::VARCHAR(66)[]),
+									unnest($4::VARCHAR(66)[][]))`
+)

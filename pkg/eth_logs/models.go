@@ -14,7 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package eth_logs
+
+// LogModelV2WithMeta is the db model for eth.logs for v2 DB with the additional metadata required to convert to v3 model
+type LogModelV2WithMeta struct {
+	TxHash string `db:"tx_hash"`
+	LogModelV2
+}
 
 // LogModelV2 is the db model for eth.logs for v2 DB
 type LogModelV2 struct {

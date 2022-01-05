@@ -14,11 +14,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package eth_accounts
 
-type Transformer struct {
-}
+const (
+	PgReadEthAccountsStr = `SELECT eth.header_cids.block_hash, eth.state_cids.state_path, eth.state_accounts.*
+							FROM eth.state_accounts
+							INNER JOIN eth.state_cids ON (state_accounts.state_id = state_cids.id)
+							INNER JOIN eth.header_cids ON (state_cids.header_id = header_cids.id)
+							WHERE block_number = $1`
 
-func (t *Transformer) Transform(model []interface{}) ([]interface{}, error) {
-
-}
+	PgWriteEthAccountsStr = `INSERT INTO eth.state_accounts (header_id, state_path, balance, nonce, code_hash, storage_root)
+							VALUES (unnest($1::VARCHAR(66)[]), unnest($2::BYTEA[]), unnest($3::NUMERIC[]), unnest($4::BIGINT[]),
+							unnest($5::BYTEA[]), unnest($6::VARCHAR(66)[]))`
+)

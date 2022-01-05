@@ -14,7 +14,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package eth_uncles
+
+// UncleModelV2WithMeta is the db model for eth.uncle_cids for v2 DB
+// with the additional metadata required to convert to the v3 model
+type UncleModelV2WithMeta struct {
+	BlockHash string `db:"block_hash"`
+	UncleModelV2
+}
 
 // UncleModelV2 is the db model for eth.uncle_cids for v2 DB
 type UncleModelV2 struct {

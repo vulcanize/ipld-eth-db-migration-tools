@@ -14,17 +14,20 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package migration_tools
+package public_blocks
 
-import "github.com/ethereum/go-ethereum/statediff/indexer/postgres"
+import "github.com/vulcanize/migration-tools/pkg/interfaces"
 
-// Config struct holds the configuration params for a Migrator
-type Config struct {
-	ReadDB  *postgres.DB
-	WriteDB *postgres.DB
+// Transformer for transforming v2 DB public.nodes models to v3 DB models
+type Transformer struct {
 }
 
-// NewConfig returns a new Config
-func NewConfig() *Config {
-	return &Config{}
+// NewTransformer satisfies interfaces.TransformerConstructor for public.nodes
+func NewTransformer() interfaces.Transformer {
+	return &Transformer{}
+}
+
+// Transform satisfies interfaces.Transformer for public.nodes
+func (t *Transformer) Transform(models [][]interface{}) ([][]interface{}, error) {
+
 }

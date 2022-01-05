@@ -14,17 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package migration_tools
+package public_blocks
 
-import "github.com/ethereum/go-ethereum/statediff/indexer/postgres"
-
-// Config struct holds the configuration params for a Migrator
-type Config struct {
-	ReadDB  *postgres.DB
-	WriteDB *postgres.DB
-}
-
-// NewConfig returns a new Config
-func NewConfig() *Config {
-	return &Config{}
+// NodeModel is the v2 and v3 model for public.nodes
+type NodeModel struct {
+	ClientName   string `db:"client_name"`
+	GenesisBlock string `db:"genesis_block"`
+	NetworkID    string `db:"network_id"`
+	NodeID       string `db:"node_id"`
+	ChainID      int    `db:"chain_id"`
 }

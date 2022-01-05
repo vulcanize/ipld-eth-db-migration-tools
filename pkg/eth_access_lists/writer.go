@@ -14,11 +14,24 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package eth_access_lists
 
+import (
+	"github.com/jmoiron/sqlx"
+	"github.com/vulcanize/migration-tools/pkg/interfaces"
+)
+
+// Writer struct for writing v3 DB eth.access_list_elements models
 type Writer struct {
+	db *sqlx.DB
 }
 
-func (w *Writer) Write(models []interface{}) error {
+// NewWriter satisfies interfaces.WriterConstructor for eth.access_list_elements
+func NewWriter(db *sqlx.DB) interfaces.Writer {
+	return &Writer{db: db}
+}
+
+// Write satisfies interfaces.Writer for eth.access_list_elements
+func (w *Writer) Write(models [][]interface{}) error {
 
 }

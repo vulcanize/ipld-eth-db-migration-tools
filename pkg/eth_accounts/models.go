@@ -14,9 +14,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package eth_accounts
 
-// AccountModelV2 is a db model for an eth state account (decoded value of state leaf node) for v2 DB
+// AccountModelV2WithMeta is the db model for eth.state_accounts for v2 DB, with the additional metadata
+// required for converting to the v3 DB model
+type AccountModelV2WithMeta struct {
+	BlocKHash string `db:"block_hash"`
+	StatePath []byte `db:"state_path"`
+	AccountModelV2
+}
+
+// AccountModelV2 is the db model for an eth state account (decoded value of state leaf node) for v2 DB
 type AccountModelV2 struct {
 	ID          int64  `db:"id"`
 	StateID     int64  `db:"state_id"`

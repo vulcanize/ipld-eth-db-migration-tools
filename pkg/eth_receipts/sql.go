@@ -16,18 +16,16 @@
 
 package eth_receipts
 
-import "github.com/vulcanize/migration-tools/pkg/interfaces"
+const (
+	PgReadEthReceiptsStr = `SELECT eth.transaction_cids.tx_hash, eth.receipt_cids.*
+							FROM eth.receipt_cids
+							INNER JOIN eth.transaction_cids ON (receipt_cids.tx_id = transaction_cids.id)
+							INNER JOIN eth.header_cids ON (transaction_cids.header_id = header_cids.id)
+							WHERE block_number = $1`
 
-// Transformer struct for transforming v2 DB eth.receipt_cids models to v3 DB models
-type Transformer struct {
-}
-
-// NewTransformer satisfies interfaces.TransformerConstructor for eth.receipt_cids
-func NewTransformer() interfaces.Transformer {
-	return &Transformer{}
-}
-
-// Transform satisfies interfaces.Transformer for eth.receipt_cids
-func (t *Transformer) Transform(models [][]interface{}) ([][]interface{}, error) {
-
-}
+	PgWriteEthReceiptsStr = `INSERT INTO eth.receipt_cids (tx_id, leaf_cid, leaf_mh_key, post_status, post_state,
+								contract, contract_hash, log_root)
+								VALUES (unnest($1::VARCHAR(66)[]), unnest($2::TEXT[]), unnest($3::TEXT[]),
+								unnest($4::INTEGER[]), unnest($5::VARCHAR(66)[]), unnest($6::VARCHAR(66)[]),
+								unnest($7::VARCHAR(66)[]), unnest($8::VARCHAR(66)[]))`
+)

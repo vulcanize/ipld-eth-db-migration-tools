@@ -14,7 +14,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package eth_receipts
+
+// ReceiptModelV2WithMeta is the db model for eth.receipt_cids for v2 DB
+// with the additional metadata required to convert to the v3 model
+type ReceiptModelV2WithMeta struct {
+	TxHash string `db:"tx_hash"`
+	ReceiptModelV2
+}
 
 // ReceiptModelV2 is the db model for eth.receipt_cids for v2 DB
 type ReceiptModelV2 struct {

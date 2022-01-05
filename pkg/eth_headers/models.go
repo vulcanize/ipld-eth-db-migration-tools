@@ -14,7 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package eth_headers
+
+// HeaderModelV2WithMeta is the db model for eth.header_cids for v2 DB with the additional data required to convert to the v3 model
+type HeaderModelV2WithMeta struct {
+	IPLD []byte `db:"data"`
+	HeaderModelV2
+}
 
 // HeaderModelV2 is the db model for eth.header_cids for v2 DB
 type HeaderModelV2 struct {

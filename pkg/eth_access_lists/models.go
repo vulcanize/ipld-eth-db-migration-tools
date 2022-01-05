@@ -14,9 +14,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package eth_access_lists
 
 import "github.com/lib/pq"
+
+// AccessListElementModelV2WithMeta is the db model for eth.access_list_entry for v2 DB, with the additional metadata
+// required for converting to the v3 DB model
+type AccessListElementModelV2WithMeta struct {
+	xHash string `db:"tx_hash"`
+	AccessListElementModelV2
+}
 
 // AccessListElementModelV2 is the db model for eth.access_list_entry for v2 DB
 type AccessListElementModelV2 struct {

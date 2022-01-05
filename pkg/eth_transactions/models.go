@@ -14,7 +14,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package eth_transactions
+
+// TransactionModelV2WithMeta is the db model for eth.transaction_cids for v2 DB
+// with the additional metadata required to convert to the v3 model
+type TransactionModelV2WithMeta struct {
+	IPLD      []byte `db:"data"`
+	BlockHash string `db:"block_hash"`
+	TransactionModelV2
+}
 
 // TransactionModelV2 is the db model for eth.transaction_cids for v2 DB
 type TransactionModelV2 struct {

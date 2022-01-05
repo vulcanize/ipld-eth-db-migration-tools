@@ -14,17 +14,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package migration_tools
+package eth_uncles
 
-import "github.com/ethereum/go-ethereum/statediff/indexer/postgres"
+const (
+	PgReadEthUnclesStr = `SELECT eth.header_cids.block_hash, eth.uncle_cids.*
+							FROM eth.uncle_cids
+							INNER JOIN eth.header_cids ON (uncle_cids.header_id = header_cids.id)
+							WHERE block_number = $1`
 
-// Config struct holds the configuration params for a Migrator
-type Config struct {
-	ReadDB  *postgres.DB
-	WriteDB *postgres.DB
-}
-
-// NewConfig returns a new Config
-func NewConfig() *Config {
-	return &Config{}
-}
+	PgWriteEthUnclesStr = `INSERT INTO eth.uncle_cids (header_id, block_hash, parent_hash, cid, mh_key, reward)
+							VALUES (unnest($1::VARCHAR(66)[]), unnest($2::VARCHAR(66)[]), unnest($3::VARCHAR(66)[]),
+							unnest($4::TEXT[]), unnest($5::TEXT[]), unnest($6::NUMERIC[]))`
+)

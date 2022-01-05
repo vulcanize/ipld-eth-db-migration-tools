@@ -14,11 +14,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package eth_state
 
-type Writer struct {
-}
+const (
+	PgReadEthStateStr = `SELECT eth.header_cids.block_hash, eth.state_cids.*
+						FROM eth.state_cids
+						INNER JOIN eth.header_cids ON (state_cids.header_id = header_cids.id)
+						WHERE block_number = $1`
 
-func (w *Writer) Write(models []interface{}) error {
-
-}
+	PgWriteEthStateStr = `INSERT INTO eth.state_cids (header_id, state_path, state_leaf_key, node_type, cid, mh_key, diff)
+						VALUES (unnest($1::VARCHAR(66)[]), unnest($2::BYTEA[]), unnest($3::VARCHAR(66)[]),
+						unnest($4::INTEGER[]), unnest($5::TEXT[]), unnest($6::TEXT[]), unnest($7::BOOLEAN[]))`
+)

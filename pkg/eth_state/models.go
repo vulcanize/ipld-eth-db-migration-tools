@@ -14,7 +14,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package eth_state
+
+// StateModelV2WithMeta is the db model for eth.state_cids for v2 DB
+// with the additional metadata required to convert to the v3 model
+type StateModelV2WithMeta struct {
+	HeaderHash string `db:"block_hash"`
+	StateModelV2
+}
 
 // StateModelV2 is the db model for eth.state_cids for v2 DB
 type StateModelV2 struct {

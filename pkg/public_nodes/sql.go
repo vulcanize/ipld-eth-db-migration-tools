@@ -14,16 +14,13 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package migration_tools
+package public_blocks
 
-type Reader interface {
-	Read(blockHeights []uint64) ([]interface{}, []uint64, error)
-}
+const (
+	PgReadNodesStr = `SELECT client_name, genesis_block, network_id, node_id, nodes_chain_id
+						FROM public.nodes`
 
-type Writer interface {
-	Write(models []interface{}) error
-}
-
-type Transformer interface {
-	Transform(model []interface{}) ([]interface{}, error)
-}
+	PgWriteNodesStr = `INSERT INTO public.nodes (client_name, genesis_block, network_id, node_id, chain_id)
+						VALUES (unnest($1::VARCHAR[]), unnest($2::VARCHAR(66)[]), unnest($3::VARCHAR[]),
+						unnest($4::VARCHAR(128)[]), unnest($5::INTEGER[]))`
+)
