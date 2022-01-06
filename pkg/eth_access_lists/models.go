@@ -21,7 +21,7 @@ import "github.com/lib/pq"
 // AccessListElementModelV2WithMeta is the db model for eth.access_list_entry for v2 DB, with the additional metadata
 // required for converting to the v3 DB model
 type AccessListElementModelV2WithMeta struct {
-	xHash string `db:"tx_hash"`
+	TxHash string `db:"tx_hash"`
 	AccessListElementModelV2
 }
 

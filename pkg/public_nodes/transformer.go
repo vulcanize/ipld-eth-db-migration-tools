@@ -28,6 +28,6 @@ func NewTransformer() interfaces.Transformer {
 }
 
 // Transform satisfies interfaces.Transformer for public.nodes
-func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error) {
+func (t *Transformer) Transform(models interface{}, _ [2]uint64) (interface{}, [][2]uint64, error) {
 	return models, nil, nil
 }

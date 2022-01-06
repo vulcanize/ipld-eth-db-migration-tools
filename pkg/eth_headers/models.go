@@ -31,7 +31,7 @@ type HeaderModelV2 struct {
 	CID             string `db:"cid"`
 	MhKey           string `db:"mh_key"`
 	TotalDifficulty string `db:"td"`
-	NodeID          int64  `db:"node_id"`
+	NodeID          string `db:"node_id"`
 	Reward          string `db:"reward"`
 	StateRoot       string `db:"state_root"`
 	UncleRoot       string `db:"uncle_root"`

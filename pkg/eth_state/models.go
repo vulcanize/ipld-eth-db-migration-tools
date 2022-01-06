@@ -19,7 +19,7 @@ package eth_state
 // StateModelV2WithMeta is the db model for eth.state_cids for v2 DB
 // with the additional metadata required to convert to the v3 model
 type StateModelV2WithMeta struct {
-	HeaderHash string `db:"block_hash"`
+	BlockHash string `db:"block_hash"`
 	StateModelV2
 }
 

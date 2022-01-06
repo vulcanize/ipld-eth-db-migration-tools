@@ -16,7 +16,13 @@
 
 package eth_headers
 
-import "github.com/vulcanize/migration-tools/pkg/interfaces"
+import (
+	"fmt"
+
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/vulcanize/migration-tools/pkg/interfaces"
+)
 
 // Transformer struct for transforming v2 DB eth.header_cids models to v3 DB models
 type Transformer struct {
@@ -29,5 +35,34 @@ func NewTransformer() interfaces.Transformer {
 
 // Transform satisfies interfaces.Transformer for eth.header_cids
 func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error) {
-
+	v2Models, ok := models.([]HeaderModelV2WithMeta)
+	if !ok {
+		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", make([]HeaderModelV2WithMeta, 0), v2Models)
+	}
+	v3Models := make([]HeaderModelV3, len(v2Models))
+	for i, model := range v2Models {
+		header := new(types.Header)
+		if err := rlp.DecodeBytes(model.IPLD, header); err != nil {
+			return nil, [][2]uint64{expectedRange}, err
+		}
+		v3Models[i] = HeaderModelV3{
+			BlockNumber:     model.BlockNumber,
+			BlockHash:       model.BlockHash,
+			ParentHash:      model.ParentHash,
+			CID:             model.CID,
+			MhKey:           model.MhKey,
+			TotalDifficulty: model.TotalDifficulty,
+			NodeID:          model.NodeID,
+			Reward:          model.Reward,
+			StateRoot:       model.StateRoot,
+			UncleRoot:       model.UncleRoot,
+			TxRoot:          model.TxRoot,
+			RctRoot:         model.RctRoot,
+			Bloom:           model.Bloom,
+			Timestamp:       model.Timestamp,
+			TimesValidated:  model.TimesValidated,
+			Coinbase:        header.Coinbase.String(),
+		}
+	}
+	return v3Models, nil, nil
 }

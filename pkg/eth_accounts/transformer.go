@@ -16,7 +16,11 @@
 
 package eth_accounts
 
-import "github.com/vulcanize/migration-tools/pkg/interfaces"
+import (
+	"fmt"
+
+	"github.com/vulcanize/migration-tools/pkg/interfaces"
+)
 
 // Transformer struct for transforming v2 DB eth.state_accounts models into v3 DB models
 type Transformer struct {
@@ -29,5 +33,20 @@ func NewTransformer() interfaces.Transformer {
 
 // Transform satisfies interfaces.Transformer for eth.state_accounts
 func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error) {
-
+	v2Models, ok := models.([]AccountModelV2WithMeta)
+	if !ok {
+		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", make([]AccountModelV2WithMeta, 0), v2Models)
+	}
+	v3Models := make([]AccountModelV3, len(v2Models))
+	for i, model := range v2Models {
+		v3Models[i] = AccountModelV3{
+			HeaderID:    model.BlocKHash,
+			StatePath:   model.StatePath,
+			Balance:     model.Balance,
+			Nonce:       model.Nonce,
+			CodeHash:    model.CodeHash,
+			StorageRoot: model.StorageRoot,
+		}
+	}
+	return v3Models, nil, nil
 }

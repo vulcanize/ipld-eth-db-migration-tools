@@ -16,7 +16,12 @@
 
 package eth_transactions
 
-import "github.com/vulcanize/migration-tools/pkg/interfaces"
+import (
+	"fmt"
+
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/vulcanize/migration-tools/pkg/interfaces"
+)
 
 // Transformer struct for transforming v2 DB eth.transaction_cids models to v3 DB models
 type Transformer struct {
@@ -29,5 +34,32 @@ func NewTransformer() interfaces.Transformer {
 
 // Transform satisfies interfaces.Transformer for eth.transaction_cids
 func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error) {
-
+	v2Models, ok := models.([]TransactionModelV2WithMeta)
+	if !ok {
+		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", make([]TransactionModelV2WithMeta, 0), v2Models)
+	}
+	v3Models := make([]TransactionModelV3, len(v2Models))
+	for i, model := range v2Models {
+		tx := new(types.Transaction)
+		if err := tx.UnmarshalBinary(model.IPLD); err != nil {
+			return nil, [][2]uint64{expectedRange}, err
+		}
+		val := ""
+		if tx.Value() != nil {
+			val = tx.Value().String()
+		}
+		v3Models[i] = TransactionModelV3{
+			HeaderID: model.BlockHash,
+			Index:    model.Index,
+			TxHash:   model.TxHash,
+			CID:      model.CID,
+			MhKey:    model.MhKey,
+			Dst:      model.Dst,
+			Src:      model.Src,
+			Data:     model.Data,
+			Type:     *model.Type,
+			Value:    val,
+		}
+	}
+	return v3Models, nil, nil
 }

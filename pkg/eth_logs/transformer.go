@@ -16,7 +16,11 @@
 
 package eth_logs
 
-import "github.com/vulcanize/migration-tools/pkg/interfaces"
+import (
+	"fmt"
+
+	"github.com/vulcanize/migration-tools/pkg/interfaces"
+)
 
 // Transformer struct for transforming v2 DB eth.log_cids models to v3 DB models
 type Transformer struct {
@@ -29,5 +33,24 @@ func NewTransformer() interfaces.Transformer {
 
 // Transform satisfies interfaces.Transformer for eth.log_cids
 func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error) {
-
+	v2Models, ok := models.([]LogModelV2WithMeta)
+	if !ok {
+		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", make([]LogModelV2WithMeta, 0), v2Models)
+	}
+	v3Models := make([]LogModelV3, len(v2Models))
+	for i, model := range v2Models {
+		v3Models[i] = LogModelV3{
+			ReceiptID: model.TxHash,
+			LeafCID:   model.LeafCID,
+			LeafMhKey: model.LeafMhKey,
+			Address:   model.Address,
+			Index:     model.Index,
+			Data:      model.Data,
+			Topic0:    model.Topic0,
+			Topic1:    model.Topic1,
+			Topic2:    model.Topic2,
+			Topic3:    model.Topic3,
+		}
+	}
+	return v3Models, nil, nil
 }

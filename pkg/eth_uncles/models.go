@@ -19,7 +19,7 @@ package eth_uncles
 // UncleModelV2WithMeta is the db model for eth.uncle_cids for v2 DB
 // with the additional metadata required to convert to the v3 model
 type UncleModelV2WithMeta struct {
-	BlockHash string `db:"block_hash"`
+	HeaderHash string `db:"header_cids.block_hash"`
 	UncleModelV2
 }
 
@@ -27,7 +27,7 @@ type UncleModelV2WithMeta struct {
 type UncleModelV2 struct {
 	ID         int64  `db:"id"`
 	HeaderID   int64  `db:"header_id"`
-	BlockHash  string `db:"block_hash"`
+	BlockHash  string `db:"uncle_cids.block_hash"`
 	ParentHash string `db:"parent_hash"`
 	CID        string `db:"cid"`
 	MhKey      string `db:"mh_key"`

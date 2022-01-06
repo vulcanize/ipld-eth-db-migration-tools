@@ -16,7 +16,11 @@
 
 package eth_storage
 
-import "github.com/vulcanize/migration-tools/pkg/interfaces"
+import (
+	"fmt"
+
+	"github.com/vulcanize/migration-tools/pkg/interfaces"
+)
 
 // Transformer struct for transforming v2 DB eth.storage_cids models to v2 DB models
 type Transformer struct {
@@ -29,5 +33,22 @@ func NewTransformer() interfaces.Transformer {
 
 // Transform satisfies interfaces.Transformer for eth.storage_cids
 func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error) {
-
+	v2Models, ok := models.([]StorageModelV2WithMeta)
+	if !ok {
+		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", make([]StorageModelV2WithMeta, 0), v2Models)
+	}
+	v3Models := make([]StorageModelV3, len(v2Models))
+	for i, model := range v2Models {
+		v3Models[i] = StorageModelV3{
+			HeaderID:   model.BlockHash,
+			StatePath:  model.StatePath,
+			Path:       model.Path,
+			StorageKey: model.StorageKey,
+			NodeType:   model.NodeType,
+			CID:        model.CID,
+			MhKey:      model.MhKey,
+			Diff:       model.Diff,
+		}
+	}
+	return v3Models, nil, nil
 }
