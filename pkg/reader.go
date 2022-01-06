@@ -57,6 +57,6 @@ func (r *Reader) Read(blockRange [2]uint64, pgStr ReadPgStr, models interface{})
 			err = tx.Commit()
 		}
 	}()
-	err = tx.Select(models, string(pgStr))
+	err = tx.Select(models, string(pgStr), blockRange[0], blockRange[1])
 	return err
 }

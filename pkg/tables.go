@@ -18,6 +18,7 @@ package migration_tools
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/vulcanize/migration-tools/pkg/eth_access_lists"
 	"github.com/vulcanize/migration-tools/pkg/eth_accounts"
@@ -46,7 +47,36 @@ const (
 	EthState              TableName = "eth.state_cids"
 	EthAccounts           TableName = "eth.state_accounts"
 	EthStorage            TableName = "eth.storage_cids"
+	Unknown               TableName = "unknown"
 )
+
+// NewTableNameFromString returns the TableName fron the provided string
+func NewTableNameFromString(tableNameStr string) (TableName, error) {
+	switch strings.ToLower(tableNameStr) {
+	case "public.nodes", "nodes":
+		return PublicNodes, nil
+	case "eth.header_cids", "header_cids", "headers":
+		return EthHeaders, nil
+	case "eth.uncle_cids", "uncle_cids", "uncles":
+		return EthUncles, nil
+	case "eth.transaction_cids", "transaction_cids", "transactions", "txs", "trxs":
+		return EthTransactions, nil
+	case "eth.access_list_elements", "access_list_elements", "access_list":
+		return EthAccessListElements, nil
+	case "eth.receipt_cids", "receipt_cids", "receipts", "rcts":
+		return EthReceipts, nil
+	case "eth.log_cids", "log_cids", "logs":
+		return EthLogs, nil
+	case "eth.state_cids", "state_cids", "state":
+		return EthState, nil
+	case "eth.state_accounts", "state_accounts", "accounts":
+		return EthAccounts, nil
+	case "eth.storage_cids", "storage_cids", "storage":
+		return EthStorage, nil
+	default:
+		return Unknown, fmt.Errorf("unrecognized table name: %s", tableNameStr)
+	}
+}
 
 // NewTableTransformerSet inits and returns a set of Transformers for the provided tables
 func NewTableTransformerSet(tables []TableName) map[TableName]interfaces.Transformer {

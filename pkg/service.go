@@ -83,11 +83,11 @@ func (s *Service) Migrate(wg *sync.WaitGroup, tables []TableName, blockRanges <-
 		for workerNum := 1; workerNum <= s.numWorkersPerTable; workerNum++ {
 			wg.Add(1)
 			go func(workerNum int, tableName TableName) {
-				logrus.Infof("starting migration worker %d for table %s", tableName)
+				logrus.Infof("starting migration worker %d for table %s", workerNum, tableName)
 				defer wg.Done()
 				for {
 					select {
-					case rng := <-subChannels[tableName]:
+					case rng := <-subChannels[tableName]: // TODO: we don't want to trigger the public.nodes iterator more than once
 						oldModels, err := NewTableV2Model(tableName)
 						if err := s.reader.Read(rng, tableReaderStrMappings[tableName], oldModels); err != nil {
 							s.errChan <- fmt.Errorf("table %s worker %d read error (%v) in range (%d, %d)", tableName, workerNum, err, rng[0], rng[1])
@@ -110,7 +110,7 @@ func (s *Service) Migrate(wg *sync.WaitGroup, tables []TableName, blockRanges <-
 							s.writeFailuresChan <- rng
 							continue
 						}
-						for _, gap := range gaps {
+						for _, gap := range gaps { // TODO: this will send duplicate ranges if running header, state, or account processing simultaneously
 							s.readGapsChan <- gap
 						}
 					case <-s.closeChan:

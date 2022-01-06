@@ -19,8 +19,9 @@ package eth_accounts
 // AccountModelV2WithMeta is the db model for eth.state_accounts for v2 DB, with the additional metadata
 // required for converting to the v3 DB model
 type AccountModelV2WithMeta struct {
-	BlocKHash string `db:"block_hash"`
-	StatePath []byte `db:"state_path"`
+	BlockHash   string `db:"block_hash"`
+	BlockNumber string `db:"block_number"`
+	StatePath   []byte `db:"state_path"`
 	AccountModelV2
 }
 
