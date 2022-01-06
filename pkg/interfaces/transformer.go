@@ -14,24 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package eth_access_lists
+package interfaces
 
-import (
-	"github.com/jmoiron/sqlx"
-	"github.com/vulcanize/migration-tools/pkg/interfaces"
-)
-
-// Writer struct for writing v3 DB eth.access_list_elements models
-type Writer struct {
-	db *sqlx.DB
+// Transformer interface for transforming v2 DB models into v3 DB models for a specific table
+type Transformer interface {
+	Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error)
 }
 
-// NewWriter satisfies interfaces.WriterConstructor for eth.access_list_elements
-func NewWriter(db *sqlx.DB) interfaces.Writer {
-	return &Writer{db: db}
-}
-
-// Write satisfies interfaces.Writer for eth.access_list_elements
-func (w *Writer) Write(models [][]interface{}) error {
-
-}
+// TransformerConstructor func sig for constructing a Transformer for a specific table
+type TransformerConstructor func() Transformer

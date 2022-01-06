@@ -17,7 +17,8 @@
 package migration_tools
 
 import (
-	"github.com/jmoiron/sqlx"
+	"fmt"
+
 	"github.com/vulcanize/migration-tools/pkg/eth_access_lists"
 	"github.com/vulcanize/migration-tools/pkg/eth_accounts"
 	"github.com/vulcanize/migration-tools/pkg/eth_headers"
@@ -28,14 +29,14 @@ import (
 	"github.com/vulcanize/migration-tools/pkg/eth_transactions"
 	"github.com/vulcanize/migration-tools/pkg/eth_uncles"
 	"github.com/vulcanize/migration-tools/pkg/interfaces"
-	"github.com/vulcanize/migration-tools/pkg/public_blocks"
+	"github.com/vulcanize/migration-tools/pkg/public_nodes"
 )
 
 // TableName explicitly types table name strings
 type TableName string
 
 const (
-	PublicBlocks          TableName = "public.blocks"
+	PublicNodes           TableName = "public.nodes"
 	EthHeaders            TableName = "eth.header_cids"
 	EthUncles             TableName = "eth.uncle_cids"
 	EthTransactions       TableName = "eth.transaction_cids"
@@ -47,39 +48,6 @@ const (
 	EthStorage            TableName = "eth.storage_cids"
 )
 
-var tableSet = []TableName{
-	PublicBlocks,
-	EthHeaders,
-	EthUncles,
-	EthTransactions,
-	EthAccessListElements,
-	EthReceipts,
-	EthLogs,
-	EthState,
-	EthAccounts,
-	EthStorage,
-}
-
-var numTables = len(tableSet)
-
-// NewTableReaderSet inits and returns a set of Readers for the provided tables
-func NewTableReaderSet(tables []TableName, db *sqlx.DB) map[TableName]interfaces.Reader {
-	tableReaderSet := make(map[TableName]interfaces.Reader, len(tables))
-	for _, tableName := range tables {
-		tableReaderSet[tableName] = tableReaderConstructorMappings[tableName](db)
-	}
-	return tableReaderSet
-}
-
-// NewTableWriterSet inits and returns a set of Writers for the provided tables
-func NewTableWriterSet(tables []TableName, db *sqlx.DB) map[TableName]interfaces.Writer {
-	tableReaderSet := make(map[TableName]interfaces.Writer, len(tables))
-	for _, tableName := range tables {
-		tableReaderSet[tableName] = tableWriterConstructorMappings[tableName](db)
-	}
-	return tableReaderSet
-}
-
 // NewTableTransformerSet inits and returns a set of Transformers for the provided tables
 func NewTableTransformerSet(tables []TableName) map[TableName]interfaces.Transformer {
 	tableReaderSet := make(map[TableName]interfaces.Transformer, len(tables))
@@ -89,34 +57,34 @@ func NewTableTransformerSet(tables []TableName) map[TableName]interfaces.Transfo
 	return tableReaderSet
 }
 
-var tableReaderConstructorMappings = map[TableName]interfaces.ReaderConstructor{
-	PublicBlocks:          public_blocks.NewReader,
-	EthHeaders:            eth_headers.NewReader,
-	EthUncles:             eth_uncles.NewReader,
-	EthTransactions:       eth_transactions.NewReader,
-	EthAccessListElements: eth_access_lists.NewReader,
-	EthReceipts:           eth_receipts.NewReader,
-	EthLogs:               eth_logs.NewReader,
-	EthState:              eth_state.NewReader,
-	EthAccounts:           eth_accounts.NewReader,
-	EthStorage:            eth_storage.NewReader,
-}
-
-var tableWriterConstructorMappings = map[TableName]interfaces.WriterConstructor{
-	PublicBlocks:          public_blocks.NewWriter,
-	EthHeaders:            eth_headers.NewWriter,
-	EthUncles:             eth_uncles.NewWriter,
-	EthTransactions:       eth_transactions.NewWriter,
-	EthAccessListElements: eth_access_lists.NewWriter,
-	EthReceipts:           eth_receipts.NewWriter,
-	EthLogs:               eth_logs.NewWriter,
-	EthState:              eth_state.NewWriter,
-	EthAccounts:           eth_accounts.NewWriter,
-	EthStorage:            eth_storage.NewWriter,
+// NewTableV2Model returns an allocation for a DB model of the provided table
+func NewTableV2Model(tableName TableName) (interface{}, error) {
+	switch tableName {
+	case PublicNodes:
+		return new(public_nodes.NodeModel), nil
+	case EthHeaders:
+		return new(eth_headers.HeaderModelV2WithMeta), nil
+	case EthUncles:
+		return new(eth_uncles.UncleModelV2WithMeta), nil
+	case EthTransactions:
+		return new(eth_transactions.TransactionModelV2WithMeta), nil
+	case EthAccessListElements:
+		return new(eth_access_lists.AccessListElementModelV2WithMeta), nil
+	case EthReceipts:
+		return new(eth_receipts.ReceiptModelV2WithMeta), nil
+	case EthLogs:
+		return new(eth_logs.LogModelV2WithMeta), nil
+	case EthAccounts:
+		return new(eth_accounts.AccountModelV2WithMeta), nil
+	case EthStorage:
+		return new(eth_storage.StorageModelV2WithMeta), nil
+	default:
+		return nil, fmt.Errorf("unsupported table name: %s", tableName)
+	}
 }
 
 var tableTransformerConstructorMappings = map[TableName]interfaces.TransformerConstructor{
-	PublicBlocks:          public_blocks.NewTransformer,
+	PublicNodes:           public_nodes.NewTransformer,
 	EthHeaders:            eth_headers.NewTransformer,
 	EthUncles:             eth_uncles.NewTransformer,
 	EthTransactions:       eth_transactions.NewTransformer,
@@ -126,4 +94,30 @@ var tableTransformerConstructorMappings = map[TableName]interfaces.TransformerCo
 	EthState:              eth_state.NewTransformer,
 	EthAccounts:           eth_accounts.NewTransformer,
 	EthStorage:            eth_storage.NewTransformer,
+}
+
+var tableReaderStrMappings = map[TableName]ReadPgStr{
+	PublicNodes:           PgReadNodesStr,
+	EthHeaders:            PgReadEthHeadersStr,
+	EthUncles:             PgReadEthUnclesStr,
+	EthTransactions:       PgReadEthTransactionsStr,
+	EthAccessListElements: PgReadAccessListElementsStr,
+	EthReceipts:           PgReadEthReceiptsStr,
+	EthLogs:               PgReadEthLogsStr,
+	EthState:              PgReadEthStateStr,
+	EthAccounts:           PgReadEthAccountsStr,
+	EthStorage:            PgReadEthStorageStr,
+}
+
+var tableWriterStrMappings = map[TableName]WritePgStr{
+	PublicNodes:           PgWriteNodesStr,
+	EthHeaders:            PgWriteEthHeadersStr,
+	EthUncles:             PgWriteEthUnclesStr,
+	EthTransactions:       PgWriteEthTransactionsStr,
+	EthAccessListElements: PgWriteAccessListElementsStr,
+	EthReceipts:           PgWriteEthReceiptsStr,
+	EthLogs:               PgWriteEthLogsStr,
+	EthState:              PgWriteEthStateStr,
+	EthAccounts:           PgWriteEthAccountsStr,
+	EthStorage:            PgWriteEthStorageStr,
 }
