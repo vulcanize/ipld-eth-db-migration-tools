@@ -1,0 +1,36 @@
+[migrator]
+    ranges = [
+        [0, 1000]
+    ]
+    start = 0 # $MIGRATION_START
+    stop = 1000 # $MIGRATION_STOP
+    tableNames = [ # $MIGRATION_TABLE_NAMES
+        "headers",
+        "transactions",
+        "storage"
+    ]
+    workersPerTable = 1 # $MIGRATION_WORKERS_PER_TABLE
+
+[log]
+    file = "path/to/log/file" # $LOGRUS_FILE
+    level = "info" # $LOGRUS_LEVEL
+
+[v2]
+    databaseName = "vulcanize_public_v2" # $V2_DATABASE_NAME
+    databaseHostName = "localhost" # $V2_DATABASE_HOSTNAME
+    databasePort = "5432" # $V2_DATABASE_PORT
+    databaseUser = "postgtres" # $V2_DATABASE_USER
+    databasePassword = "" # $V2_DATABASE_PASSWORD
+    databaseMaxIdleConns = 50 # $V2_DATABASE_MAX_IDLE_CONNECTIONS
+    databaseMaxOpenConns = 100 # $V2_DATABASE_MAX_OPEN_CONNECTIONS
+    databaseMaxConnLifetime = 0 # $V2_DATABASE_MAX_CONN_LIFETIME
+
+[v3]
+    databaseName = "vulcanize_public_v2" # $V3_DATABASE_NAME
+    databaseHostName = "localhost" # $V3_DATABASE_HOSTNAME
+    databasePort = "5432" # $V3_DATABASE_PORT
+    databaseUser = "postgtres" # $V3_DATABASE_USER
+    databasePassword = "" # $V3_DATABASE_PASSWORD
+    databaseMaxIdleConns = 50 # $V3_DATABASE_MAX_IDLE_CONNECTIONS
+    databaseMaxOpenConns = 100 # $V3_DATABASE_MAX_OPEN_CONNECTIONS
+    databaseMaxConnLifetime = 0 # $V3_DATABASE_MAX_CONN_LIFETIME
