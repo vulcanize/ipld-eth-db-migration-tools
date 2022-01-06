@@ -18,6 +18,7 @@ package eth_headers
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -40,7 +41,18 @@ func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (in
 		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", make([]HeaderModelV2WithMeta, 0), v2Models)
 	}
 	v3Models := make([]HeaderModelV3, len(v2Models))
+	current := expectedRange[0]
+	end := expectedRange[1]
+	missingHeights := make([][2]uint64, 0)
+	currentMissingRange := [2]uint64{}
 	for i, model := range v2Models {
+		height, err := strconv.ParseUint(model.BlockNumber, 10, 64)
+		if err != nil {
+			return nil, [][2]uint64{expectedRange}, err
+		}
+		if height != current {
+			currentMissingRange
+		}
 		header := new(types.Header)
 		if err := rlp.DecodeBytes(model.IPLD, header); err != nil {
 			return nil, [][2]uint64{expectedRange}, err
