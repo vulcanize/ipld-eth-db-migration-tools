@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_blocks
+package public_nodes
 
 // NodeModel is the v2 and v3 model for public.nodes
 type NodeModel struct {

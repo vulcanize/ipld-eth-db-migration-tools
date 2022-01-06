@@ -16,7 +16,11 @@
 
 package eth_receipts
 
-import "github.com/vulcanize/migration-tools/pkg/interfaces"
+import (
+	"fmt"
+
+	"github.com/vulcanize/migration-tools/pkg/interfaces"
+)
 
 // Transformer struct for transforming v2 DB eth.receipt_cids models to v3 DB models
 type Transformer struct {
@@ -28,6 +32,23 @@ func NewTransformer() interfaces.Transformer {
 }
 
 // Transform satisfies interfaces.Transformer for eth.receipt_cids
-func (t *Transformer) Transform(models [][]interface{}) ([][]interface{}, error) {
-
+func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error) {
+	v2Models, ok := models.([]ReceiptModelV2WithMeta)
+	if !ok {
+		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", make([]ReceiptModelV2WithMeta, 0), v2Models)
+	}
+	v3Models := make([]ReceiptModelV3, len(v2Models))
+	for i, model := range v2Models {
+		v3Models[i] = ReceiptModelV3{
+			TxID:         model.TxHash,
+			LeafCID:      model.LeafCID,
+			LeafMhKey:    model.LeafMhKey,
+			PostStatus:   model.PostStatus,
+			PostState:    model.PostState,
+			Contract:     model.Contract,
+			ContractHash: model.ContractHash,
+			LogRoot:      model.LogRoot,
+		}
+	}
+	return v3Models, nil, nil
 }
