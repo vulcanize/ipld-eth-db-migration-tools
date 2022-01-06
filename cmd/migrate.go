@@ -18,28 +18,29 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/les/vflux/server"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
-	migration_tools "github.com/vulcanize/migration-tools/pkg"
 	"os"
 	"os/signal"
 	"sync"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
+	migration_tools "github.com/vulcanize/migration-tools/pkg"
 )
 
 // migrateCmd represents the migrate command
 var migrateCmd = &cobra.Command{
 	Use:   "migrate",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Tool for migrating v2 DB to v3 DB",
+	Long: `Tool for reading data from a v2 database, transforming them into v3 DB models,
+and writing them to a v3 database.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Can be configured to work over a subset of the tables, and over specific block ranges.
+
+While processing headers, state, or state accounts it checks for gaps in the data and writes these out to a file`,
 	Run: func(cmd *cobra.Command, args []string) {
 		subCommand = cmd.CalledAs()
 		logWithCommand = *logrus.WithField("SubCommand", subCommand)
@@ -55,25 +56,28 @@ func migrate() {
 		logWithCommand.Fatalf("failed to initialize a new Migrator: %v", err)
 	}
 	wg := new(sync.WaitGroup)
-	tables := getTablesNames()
+	tables, err := getTableNames()
+	if err != nil {
+		logWithCommand.Fatalf("failed to generate set of TableNames to process: %v", err)
+	}
 	rangeChan := make(chan [2]uint64)
-	readGapsChan, writeGapsChan, _,  errChan := migrator.Migrate(wg, tables, rangeChan)
+	readGapsChan, writeGapsChan, _, errChan := migrator.Migrate(wg, tables, rangeChan)
 	quitChan := make(chan struct{})
+	if err := sendRanges(wg, rangeChan, quitChan); err != nil {
+		logWithCommand.Fatalf("sendRanges subprocess failure: %v", err)
+	}
+	wg.Add(1)
 	go func() {
-		sendRanges(wg, rangeChan, quitChan)
-	}()
-	go func() {
-		wg.Add(1)
 		defer wg.Done()
 		for {
 			select {
-			case readGap := <- readGapsChan:
+			case readGap := <-readGapsChan:
 				logWithCommand.Infof("Migrator read gap: %v", readGap)
-			case writeGap := <- writeGapsChan:
+			case writeGap := <-writeGapsChan:
 				logWithCommand.Infof("Migrator write gap: %v", writeGap)
-			case err := <- errChan:
+			case err := <-errChan:
 				logWithCommand.Errorf("Migrator error: %v", err)
-			case <- quitChan:
+			case <-quitChan:
 				return
 			}
 		}
@@ -85,93 +89,103 @@ func migrate() {
 	wg.Wait()
 }
 
+func getTableNames() ([]migration_tools.TableName, error) {
+	tableNameStrs := viper.GetStringSlice(migration_tools.TOML_MIGRATION_STOP)
+	tableNames := make([]migration_tools.TableName, 0, len(tableNameStrs))
+	for _, tableNameStr := range tableNameStrs {
+		tableName, err := migration_tools.NewTableNameFromString(tableNameStr)
+		if err != nil {
+			logWithCommand.Warnf("unable to convert table name string to TableName: %v", err)
+			continue
+		}
+		tableNames = append(tableNames, tableName)
+	}
+	if len(tableNames) == 0 {
+		return nil, fmt.Errorf("migrator needs to be configured with a set of table names to process")
+	}
+	return tableNames, nil
+}
+
+func sendRanges(wg *sync.WaitGroup, rangeChan chan [2]uint64, quitChan chan struct{}) error {
+	var blockRanges [][2]uint64
+	viper.UnmarshalKey(migration_tools.TOML_MIGRATION_RANGES, &blockRanges)
+	if viper.IsSet(migration_tools.TOML_MIGRATION_START) && viper.IsSet(migration_tools.TOML_MIGRATION_STOP) {
+		hardStart := viper.GetUint64(migration_tools.TOML_MIGRATION_START)
+		hardStop := viper.GetUint64(migration_tools.TOML_MIGRATION_STOP)
+		blockRanges = append(blockRanges, [2]uint64{hardStart, hardStop})
+	}
+	if len(blockRanges) == 0 {
+		return errors.New("migrator needs to be configured with a set of block ranges to process")
+	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i, blockRange := range blockRanges {
+			select {
+			case <-quitChan:
+				logWithCommand.Infof("closing sendRanges subprocess\r\nunsent ranges: %+v", blockRanges[i:])
+				return
+			default:
+				rangeChan <- blockRange
+			}
+		}
+		logWithCommand.Infof("sendRanges subprocess has finished sending all of its ranges")
+	}()
+	return nil
+}
+
 func init() {
 	rootCmd.AddCommand(migrateCmd)
 
-	// groupcache flags
-	migrateCmd.PersistentFlags().Bool("find-gaps", false, "turn on the gap finding")
-	migrateCmd.PersistentFlags().Uint64("start-height", 0, "start height")
-	migrateCmd.PersistentFlags().Uint64("stop-height", 0, "stop height")
-	migrateCmd.PersistentFlags().StringArray("table-names", nil, "list of table names to migrate")
-	migrateCmd.PersistentFlags().Int("workers-per-table", 1, "number of workers per table")
+	// process flags
+	migrateCmd.PersistentFlags().Uint64(migration_tools.CLI_MIGRATION_START, 0, "start height")
+	migrateCmd.PersistentFlags().Uint64(migration_tools.CLI_MIGRATION_STOP, 0, "stop height")
+	migrateCmd.PersistentFlags().StringArray(migration_tools.CLI_MIGRATION_TABLE_NAMES, nil, "list of table names to migrate")
+	migrateCmd.PersistentFlags().Int(migration_tools.CLI_MIGRATION_WORKERS_PER_TABLE, 1, "number of workers per table")
 
-	migrateCmd.PersistentFlags().Bool("v2-db-name", false, "turn on the gap finding")
-	migrateCmd.PersistentFlags().Uint64("v2-db-", 0, "start height")
-	migrateCmd.PersistentFlags().Uint64("stop-height", 0, "stop height")
-	migrateCmd.PersistentFlags().StringArray("table-names", nil, "list of table names to migrate")
-	migrateCmd.PersistentFlags().Int("workers-per-table", 1, "number of workers per table")
+	// v2 db flags
+	migrateCmd.PersistentFlags().String(migration_tools.CLI_V2_DATABASE_NAME, "vulcanize_v2", "name for the v2 database")
+	migrateCmd.PersistentFlags().String(migration_tools.CLI_V2_DATABASE_HOSTNAME, "localhost", "hostname for the v2 database")
+	migrateCmd.PersistentFlags().String(migration_tools.CLI_V2_DATABASE_PORT, "5432", "port for the v2 database")
+	migrateCmd.PersistentFlags().String(migration_tools.CLI_V2_DATABASE_USER, "postgres", "username to use with the v2 database")
+	migrateCmd.PersistentFlags().String(migration_tools.CLI_V2_DATABASE_PASSWORD, "", "password to use for the v2 database")
+	migrateCmd.PersistentFlags().Int(migration_tools.CLI_V2_DATABASE_MAX_IDLE_CONNECTIONS, 0, "max idle connections for the v2 database")
+	migrateCmd.PersistentFlags().Int(migration_tools.CLI_V2_DATABASE_MAX_OPEN_CONNECTIONS, 0, "max open connections for the v2 database")
+	migrateCmd.PersistentFlags().Duration(migration_tools.CLI_V2_DATABASE_MAX_CONN_LIFETIME, 0, "max connection lifetime for the v2 database")
 
-	migrateCmd.PersistentFlags().Bool("find-gaps", false, "turn on the gap finding")
-	migrateCmd.PersistentFlags().Uint64("start-height", 0, "start height")
-	migrateCmd.PersistentFlags().Uint64("stop-height", 0, "stop height")
-	migrateCmd.PersistentFlags().StringArray("table-names", nil, "list of table names to migrate")
-	migrateCmd.PersistentFlags().Int("workers-per-table", 1, "number of workers per table")
+	// v3 db flags
+	migrateCmd.PersistentFlags().String(migration_tools.CLI_V3_DATABASE_NAME, "vulcanize_v3", "name for the v3 database")
+	migrateCmd.PersistentFlags().String(migration_tools.CLI_V3_DATABASE_HOSTNAME, "localhost", "hostname for the v3 database")
+	migrateCmd.PersistentFlags().String(migration_tools.CLI_V3_DATABASE_PORT, "5432", "port for the v3 database")
+	migrateCmd.PersistentFlags().String(migration_tools.CLI_V3_DATABASE_USER, "postgres", "username to use with the v3 database")
+	migrateCmd.PersistentFlags().String(migration_tools.CLI_V3_DATABASE_PASSWORD, "", "password to use for the v3 database")
+	migrateCmd.PersistentFlags().Int(migration_tools.CLI_V3_DATABASE_MAX_IDLE_CONNECTIONS, 0, "max idle connections for the v3 database")
+	migrateCmd.PersistentFlags().Int(migration_tools.CLI_V3_DATABASE_MAX_OPEN_CONNECTIONS, 0, "max open connections for the v3 database")
+	migrateCmd.PersistentFlags().Duration(migration_tools.CLI_V3_DATABASE_MAX_CONN_LIFETIME, 0, "max connection lifetime for the v3 database")
 
-	// state validator flags
-	migrateCmd.PersistentFlags().Bool("validator-enabled", false, "turn on the state validator")
-	migrateCmd.PersistentFlags().Uint("validator-every-nth-block", 1500, "only validate every Nth block")
+	// process TOML bindings
+	viper.BindPFlag(migration_tools.TOML_MIGRATION_START, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_MIGRATION_START))
+	viper.BindPFlag(migration_tools.TOML_MIGRATION_STOP, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_MIGRATION_STOP))
+	viper.BindPFlag(migration_tools.TOML_MIGRATION_TABLE_NAMES, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_MIGRATION_TABLE_NAMES))
+	viper.BindPFlag(migration_tools.TOML_MIGRATION_WORKERS_PER_TABLE, migrateCmd.PersistentFlags().Lookup(migration_tools.TOML_MIGRATION_WORKERS_PER_TABLE))
 
-	// groupcache flags
-	viper.BindPFlag("groupcache.pool.enabled", migrateCmd.PersistentFlags().Lookup("gcache-pool-enabled"))
-	viper.BindPFlag("groupcache.pool.httpEndpoint", migrateCmd.PersistentFlags().Lookup("gcache-pool-http-path"))
-	viper.BindPFlag("groupcache.pool.peerHttpEndpoints", migrateCmd.PersistentFlags().Lookup("gcache-pool-http-peers"))
-	viper.BindPFlag("groupcache.statedb.cacheSizeInMB", migrateCmd.PersistentFlags().Lookup("gcache-statedb-cache-size"))
-	viper.BindPFlag("groupcache.statedb.cacheExpiryInMins", migrateCmd.PersistentFlags().Lookup("gcache-statedb-cache-expiry"))
+	// v2 db TOML bindings
+	viper.BindPFlag(migration_tools.TOML_V2_DATABASE_NAME, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V2_DATABASE_NAME))
+	viper.BindPFlag(migration_tools.TOML_V2_DATABASE_HOSTNAME, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V2_DATABASE_HOSTNAME))
+	viper.BindPFlag(migration_tools.TOML_V2_DATABASE_PORT, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_PORT))
+	viper.BindPFlag(migration_tools.TOML_V2_DATABASE_USER, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_USER))
+	viper.BindPFlag(migration_tools.TOML_V2_DATABASE_PASSWORD, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V2_DATABASE_PASSWORD))
+	viper.BindPFlag(migration_tools.TOML_V2_DATABASE_MAX_IDLE_CONNECTIONS, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V2_DATABASE_MAX_IDLE_CONNECTIONS))
+	viper.BindPFlag(migration_tools.TOML_V2_DATABASE_MAX_OPEN_CONNECTIONS, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V2_DATABASE_MAX_OPEN_CONNECTIONS))
+	viper.BindPFlag(migration_tools.TOML_V2_DATABASE_MAX_CONN_LIFETIME, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V2_DATABASE_MAX_CONN_LIFETIME))
 
-	// state validator flags
-	viper.BindPFlag("validator.enabled", migrateCmd.PersistentFlags().Lookup("validator-enabled"))
-	viper.BindPFlag("validator.everyNthBlock", migrateCmd.PersistentFlags().Lookup("validator-every-nth-block"))
+	// v3 db TOML bindings
+	viper.BindPFlag(migration_tools.TOML_V3_DATABASE_NAME, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_NAME))
+	viper.BindPFlag(migration_tools.TOML_V3_DATABASE_HOSTNAME, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_HOSTNAME))
+	viper.BindPFlag(migration_tools.TOML_V3_DATABASE_PORT, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_PORT))
+	viper.BindPFlag(migration_tools.TOML_V3_DATABASE_USER, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_USER))
+	viper.BindPFlag(migration_tools.TOML_V3_DATABASE_PASSWORD, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_PASSWORD))
+	viper.BindPFlag(migration_tools.TOML_V3_DATABASE_MAX_IDLE_CONNECTIONS, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_MAX_IDLE_CONNECTIONS))
+	viper.BindPFlag(migration_tools.TOML_V3_DATABASE_MAX_OPEN_CONNECTIONS, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_MAX_OPEN_CONNECTIONS))
+	viper.BindPFlag(migration_tools.TOML_V3_DATABASE_MAX_CONN_LIFETIME, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_MAX_CONN_LIFETIME))
 }
-
-const (
-	MIGRATION_FIND_GAPS         = "MIGRATION_FIND_GAPS"
-	MIGRATION_START             = "MIGRATION_START"
-	MIGRATION_STOP              = "MIGRATION_STOP"
-	MIGRATION_TABLE_NAMES       = "MIGRATION_TABLE_NAMES"
-	MIGRATION_WORKERS_PER_TABLE = "MIGRATION_WORKERS_PER_TABLE"
-
-	V2_DATABASE_NAME                 = "V2_DATABASE_NAME"
-	V2_DATABASE_HOSTNAME             = "V2_DATABASE_HOSTNAME"
-	V2_DATABASE_PORT                 = "V2_DATABASE_PORT"
-	V2_DATABASE_USER                 = "V2_DATABASE_USER"
-	V2_DATABASE_PASSWORD             = "V2_DATABASE_PASSWORD"
-	V2_DATABASE_MAX_IDLE_CONNECTIONS = "V2_DATABASE_MAX_IDLE_CONNECTIONS"
-	V2_DATABASE_MAX_OPEN_CONNECTIONS = "V2_DATABASE_MAX_OPEN_CONNECTIONS"
-	V2_DATABASE_MAX_CONN_LIFETIME    = "V2_DATABASE_MAX_CONN_LIFETIME"
-
-	V3_DATABASE_NAME                 = "V3_DATABASE_NAME"
-	V3_DATABASE_HOSTNAME             = "V3_DATABASE_HOSTNAME"
-	V3_DATABASE_PORT                 = "V3_DATABASE_PORT"
-	V3_DATABASE_USER                 = "V3_DATABASE_USER"
-	V3_DATABASE_PASSWORD             = "V3_DATABASE_PASSWORD"
-	V3_DATABASE_MAX_IDLE_CONNECTIONS = "V3_DATABASE_MAX_IDLE_CONNECTIONS"
-	V3_DATABASE_MAX_OPEN_CONNECTIONS = "V3_DATABASE_MAX_OPEN_CONNECTIONS"
-	V3_DATABASE_MAX_CONN_LIFETIME    = "V3_DATABASE_MAX_CONN_LIFETIME"
-)
-
-const (
-	TOML_MIGRATION_FIND_GAPS         = "migrator.findGaps"
-	TOML_MIGRATION_RANGES            = "migrator.ranges"
-	TOML_MIGRATION_START             = "migrator.start"
-	TOML_MIGRATION_STOP              = "migrator.stop"
-	TOML_MIGRATION_TABLE_NAMES       = "migrator.tableNames"
-	TOML_MIGRATION_WORKERS_PER_TABLE = "migrator_workerPerTable"
-
-	TOML_V2_DATABASE_NAME                 = "v2.databaseName"
-	TOML_V2_DATABASE_HOSTNAME             = "v2.databaseHostName"
-	TOML_V2_DATABASE_PORT                 = "v2.databasePort"
-	TOML_V2_DATABASE_USER                 = "v2.databaseUser"
-	TOML_V2_DATABASE_PASSWORD             = "v2.databasePassword"
-	TOML_V2_DATABASE_MAX_IDLE_CONNECTIONS = "v2.databaseMaxIdleConns"
-	TOML_V2_DATABASE_MAX_OPEN_CONNECTIONS = "v2.databaseMaxOpenConns"
-	TOML_V2_DATABASE_MAX_CONN_LIFETIME    = "v2.databaseMaxConnLifetime"
-
-	TOML_V3_DATABASE_NAME                 = "v3.databaseName"
-	TOML_V3_DATABASE_HOSTNAME             = "v3.databaseHostName"
-	TOML_V3_DATABASE_PORT                 = "v3.databasePort"
-	TOML_V3_DATABASE_USER                 = "v3.databaseUser"
-	TOML_V3_DATABASE_PASSWORD             = "v3.databasePassword"
-	TOML_V3_DATABASE_MAX_IDLE_CONNECTIONS = "v3.databaseMaxIdleConns"
-	TOML_V3_DATABASE_MAX_OPEN_CONNECTIONS = "v3.databaseMaxOpenConns"
-	TOML_V3_DATABASE_MAX_CONN_LIFETIME    = "v3.databaseMaxConnLifetime"
-)
