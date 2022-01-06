@@ -54,7 +54,7 @@ const (
 	TOML_MIGRATION_START             = "migrator.start"
 	TOML_MIGRATION_STOP              = "migrator.stop"
 	TOML_MIGRATION_TABLE_NAMES       = "migrator.tableNames"
-	TOML_MIGRATION_WORKERS_PER_TABLE = "migrator_workerPerTable"
+	TOML_MIGRATION_WORKERS_PER_TABLE = "migrator.workersPerTable"
 
 	TOML_V2_DATABASE_NAME                 = "v2.databaseName"
 	TOML_V2_DATABASE_HOSTNAME             = "v2.databaseHostName"
