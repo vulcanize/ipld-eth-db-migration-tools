@@ -16,7 +16,7 @@
 
 package main
 
-import "ipld-eth-db-migration-tools/cmd"
+import "github.com/vulcanize/migration-tools/cmd"
 
 func main() {
 	cmd.Execute()

@@ -18,75 +18,92 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"os"
+	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-
 	"github.com/spf13/viper"
+
+	migration_tools "github.com/vulcanize/migration-tools/pkg"
 )
 
 var (
 	cfgFile        string
 	subCommand     string
-	logWithCommand logrus.Entry
+	logWithCommand log.Entry
 )
 
-// rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "ipld-eth-db-migration-tools",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Use:              "migration-tools",
+	PersistentPreRun: initFuncs,
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	cobra.CheckErr(rootCmd.Execute())
+	log.Info("----- Starting migrator -----")
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func initFuncs(cmd *cobra.Command, args []string) {
+	viper.BindEnv(migration_tools.TOML_LOGRUS_FILE, migration_tools.LOGRUS_FILE)
+	logfile := viper.GetString(migration_tools.TOML_LOGRUS_FILE)
+	if logfile != "" {
+		file, err := os.OpenFile(logfile,
+			os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err == nil {
+			log.Infof("Directing output to %s", logfile)
+			log.SetOutput(file)
+		} else {
+			log.SetOutput(os.Stdout)
+			log.Info("Failed to log to file, using default stdout")
+		}
+	} else {
+		log.SetOutput(os.Stdout)
+	}
+	if err := logLevel(); err != nil {
+		log.Fatal("Could not set log level: ", err)
+	}
+}
+
+func logLevel() error {
+	viper.BindEnv(migration_tools.TOML_LOGRUS_LEVEL, migration_tools.LOGRUS_LEVEL)
+	lvl, err := log.ParseLevel(viper.GetString(migration_tools.TOML_LOGRUS_LEVEL))
+	if err != nil {
+		return err
+	}
+	log.SetLevel(lvl)
+	if lvl > log.InfoLevel {
+		log.SetReportCaller(true)
+	}
+	log.Info("Log level set to ", lvl.String())
+	return nil
 }
 
 func init() {
 	cobra.OnInitialize(initConfig)
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file location")
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.ipld-eth-db-migration-tools.yaml)")
+	rootCmd.PersistentFlags().String(migration_tools.CLI_LOGRUS_LEVEL, log.InfoLevel.String(), "log level (trace, debug, info, warn, error, fatal, panic)")
+	rootCmd.PersistentFlags().String(migration_tools.CLI_LOGRUS_FILE, "", "file path for logging")
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	viper.BindPFlag(migration_tools.TOML_LOGRUS_LEVEL, rootCmd.PersistentFlags().Lookup("log-level"))
+	viper.BindPFlag(migration_tools.TOML_LOGRUS_FILE, rootCmd.PersistentFlags().Lookup("log-file"))
 }
 
-// initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	if cfgFile != "" {
-		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
+		if err := viper.ReadInConfig(); err == nil {
+			log.Printf("Using config file: %s", viper.ConfigFileUsed())
+		} else {
+			log.Fatal(fmt.Sprintf("Couldn't read config file: %s", err.Error()))
+		}
 	} else {
-		// Find home directory.
-		home, err := os.UserHomeDir()
-		cobra.CheckErr(err)
-
-		// Search config in home directory with name ".ipld-eth-db-migration-tools" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigType("yaml")
-		viper.SetConfigName(".ipld-eth-db-migration-tools")
-	}
-
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+		log.Warn("No config file passed with --config flag")
 	}
 }

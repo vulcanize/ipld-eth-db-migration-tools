@@ -44,7 +44,7 @@ func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (in
 		if err := tx.UnmarshalBinary(model.IPLD); err != nil {
 			return nil, [][2]uint64{expectedRange}, err
 		}
-		val := ""
+		var val string
 		if tx.Value() != nil {
 			val = tx.Value().String()
 		}

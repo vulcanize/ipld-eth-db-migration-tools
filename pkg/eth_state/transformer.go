@@ -18,6 +18,7 @@ package eth_state
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/vulcanize/migration-tools/pkg/interfaces"
 )
@@ -38,7 +39,21 @@ func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (in
 		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", make([]StateModelV2WithMeta, 0), v2Models)
 	}
 	v3Models := make([]StateModelV3, len(v2Models))
+	expectedHeight := expectedRange[0]
+	missingHeights := make([][2]uint64, 0)
 	for i, model := range v2Models {
+		height, err := strconv.ParseUint(model.BlockNumber, 10, 64)
+		if err != nil {
+			return nil, [][2]uint64{expectedRange}, err
+		}
+		// if the expected height doesn't match the actual current block height, we have a gap between the two
+		if expectedHeight < height {
+			missingHeights = append(missingHeights, [2]uint64{expectedHeight, height - 1})
+			expectedHeight = height
+		} else if height < expectedHeight {
+			return nil, [][2]uint64{expectedRange}, fmt.Errorf("it should not be possible for the current"+
+				"expected height (%d) to be greater than the actual current height (%d)", expectedHeight, height)
+		}
 		v3Models[i] = StateModelV3{
 			HeaderID: model.BlockHash,
 			Path:     model.Path,
@@ -48,6 +63,11 @@ func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (in
 			MhKey:    model.MhKey,
 			Diff:     model.Diff,
 		}
+		expectedHeight++
 	}
-	return v3Models, nil, nil
+	// if the last processed height isn't the last block in the range, we have a gap at the end of the range
+	if expectedHeight-1 != expectedRange[1] {
+		missingHeights = append(missingHeights, [2]uint64{expectedHeight, expectedRange[1]})
+	}
+	return v3Models, missingHeights, nil
 }

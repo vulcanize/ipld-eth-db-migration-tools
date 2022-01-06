@@ -27,7 +27,6 @@ type Config struct {
 	ReadDB          DBConfig
 	WriteDB         DBConfig
 	WorkersPerTable int
-	FindGaps        bool
 }
 
 // DBConfig struct holds Postgres configuration params
@@ -45,7 +44,6 @@ type DBConfig struct {
 
 // NewConfig returns a new Config
 func NewConfig() *Config {
-	viper.BindEnv(TOML_MIGRATION_FIND_GAPS, MIGRATION_FIND_GAPS)
 	viper.BindEnv(TOML_MIGRATION_START, MIGRATION_START)
 	viper.BindEnv(TOML_MIGRATION_STOP, MIGRATION_STOP)
 	viper.BindEnv(TOML_MIGRATION_TABLE_NAMES, MIGRATION_TABLE_NAMES)
@@ -73,7 +71,6 @@ func NewConfig() *Config {
 
 	return &Config{
 		WorkersPerTable: viper.GetInt(TOML_MIGRATION_WORKERS_PER_TABLE),
-		FindGaps:        viper.GetBool(TOML_MIGRATION_FIND_GAPS),
 		ReadDB: DBConfig{
 			Username:        viper.GetString(TOML_V2_DATABASE_USER),
 			Password:        viper.GetString(TOML_V2_DATABASE_PASSWORD),

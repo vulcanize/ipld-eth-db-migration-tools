@@ -43,10 +43,11 @@ const (
 							INNER JOIN eth.header_cids ON (state_cids.header_id = header_cids.id)
 							WHERE block_number BETWEEN $1 AND $2`
 
-	PgReadEthStateStr ReadPgStr = `SELECT eth.header_cids.block_hash, eth.state_cids.*
+	PgReadEthStateStr ReadPgStr = `SELECT eth.header_cids.block_number, eth.header_cids.block_hash, eth.state_cids.*
 						FROM eth.state_cids
 						INNER JOIN eth.header_cids ON (state_cids.header_id = header_cids.id)
-						WHERE block_number = $1`
+						WHERE block_number = $1
+						ORDER BY block_number ASC`
 
 	PgReadEthReceiptsStr ReadPgStr = `SELECT eth.transaction_cids.tx_hash, eth.receipt_cids.*
 							FROM eth.receipt_cids
@@ -64,13 +65,15 @@ const (
 	PgReadEthHeadersStr ReadPgStr = `SELECT public.blocks.data, eth.header_cids.*
 							FROM eth.header_cids
 							INNER JOIN public.blocks ON (header_cids.mh_key = blocks.key)
-							WHERE block_number BETWEEN $1 AND $2`
+							WHERE block_number BETWEEN $1 AND $2
+							ORDER BY block_number ASC`
 
-	PgReadEthAccountsStr ReadPgStr = `SELECT eth.header_cids.block_hash, eth.state_cids.state_path, eth.state_accounts.*
+	PgReadEthAccountsStr ReadPgStr = `SELECT eth.header_cids.block_number, eth.header_cids.block_hash, eth.state_cids.state_path, eth.state_accounts.*
 							FROM eth.state_accounts
 							INNER JOIN eth.state_cids ON (state_accounts.state_id = state_cids.id)
 							INNER JOIN eth.header_cids ON (state_cids.header_id = header_cids.id)
-							WHERE block_number BETWEEN $1 AND $2`
+							WHERE block_number BETWEEN $1 AND $2
+							ORDER BY block_number ASC`
 
 	PgReadAccessListElementsStr ReadPgStr = `SELECT eth.transaction_cids.tx_hash, eth.access_list_elements.*
 									FROM eth.access_list_elements
