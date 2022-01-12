@@ -97,8 +97,12 @@ func migrateTable(wg *sync.WaitGroup, migrator migration_tools.Migrator,
 			default:
 				rangeChan <- blockRange
 			}
+			if tableName == migration_tools.PublicNodes {
+				// public nodes will be migrated in one batch, since it is not segmented by block height
+				break
+			}
 		}
-		logWithCommand.Infof("sendRanges subprocess has finished sending all of its ranges for table %s", tableName)
+		logWithCommand.Infof("finished sending block ranges for table %s\r\nshutting down migration process for table %s", tableName, tableName)
 		close(doneChan)
 	}()
 
