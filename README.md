@@ -62,5 +62,21 @@ The names of the ENV variables are listed in the comments next to their correspo
 The precedence of configuration is ENV > CLI > TOML. For example, if a parameter is configured by both ENV variable
 and in the TOML file, the ENV variable value is the one used.
 
+The tableNames options are:
+
+public.nodes  
+eth.header_cids  
+eth.uncles_cids  
+eth.transaction_cids  
+eth.access_list_elements  
+eth.receipt_cids  
+eth.log_cids  
+eth.state_cids  
+eth.state_accounts  
+eth.storage_cids  
+eth.log_cids.repair
+
+public.blocks should be migrated using pg_dump and COPY FROM using a foreign table to handle unique constraint conflicts on INSERT.
+
 
 
