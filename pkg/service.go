@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"reflect"
 	"sync"
 
 	"github.com/sirupsen/logrus"
@@ -29,7 +30,7 @@ const defaultNumWorkersPerTable = 1
 
 // Migrator interface for migrating from v2 DB to v3 DB
 type Migrator interface {
-	Migrate(wg *sync.WaitGroup, tableName TableName, blockRanges <-chan [2]uint64) (chan [2]uint64, chan [2]uint64, chan struct{}, chan error)
+	Migrate(wg *sync.WaitGroup, tableName TableName, blockRanges <-chan [2]uint64) (chan [2]uint64, chan [2]uint64, chan struct{}, chan struct{}, chan error)
 	io.Closer
 }
 
@@ -39,9 +40,6 @@ type Service struct {
 	writer *Writer
 
 	wg                 *sync.WaitGroup
-	readGapsChan       chan [2]uint64
-	writeFailuresChan  chan [2]uint64
-	errChan            chan error
 	closeChan          chan struct{}
 	numWorkersPerTable int
 }
@@ -63,62 +61,78 @@ func NewMigrator(ctx context.Context, conf *Config) (Migrator, error) {
 	return &Service{
 		reader:             NewReader(readDB),
 		writer:             NewWriter(writeDB),
-		readGapsChan:       make(chan [2]uint64),
-		writeFailuresChan:  make(chan [2]uint64),
 		closeChan:          make(chan struct{}),
-		errChan:            make(chan error),
 		numWorkersPerTable: numWorkers,
 	}, nil
 }
 
 // Migrate satisfies Migrator
 // Migrate spins up a goroutine to process the block ranges provided through the blockRanges work chan for the specified tables
-// Migrate returns a channel for emitting read gaps and failed write ranges, a doneChan for closing the process once we
-// are sending it ranges to process, and a channel for writing out errors
-func (s *Service) Migrate(wg *sync.WaitGroup, tableName TableName, blockRanges <-chan [2]uint64) (chan [2]uint64, chan [2]uint64, chan struct{}, chan error) {
+// Migrate returns a channel for emitting read gaps and failed write ranges, a quitChan for closing the process once we
+// are sending it ranges to process, a channel for signalling successful shutdown of the process, and a channel for writing out errors
+func (s *Service) Migrate(wg *sync.WaitGroup, tableName TableName, blockRanges <-chan [2]uint64) (chan [2]uint64, chan [2]uint64, chan struct{}, chan struct{}, chan error) {
+	quitChan := make(chan struct{})
 	doneChan := make(chan struct{})
 	transformer := NewTableTransformer(tableName)
 	readPgStr := tableReaderStrMappings[tableName]
 	writePgStr := tableWriterStrMappings[tableName]
+	readGapChan := make(chan [2]uint64)
+	writeGapChan := make(chan [2]uint64)
+	errChan := make(chan error)
 
 	for workerNum := 1; workerNum <= s.numWorkersPerTable; workerNum++ {
 		wg.Add(1)
 		go func(workerNum int, tableName TableName) {
 			logrus.Infof("starting migration worker %d for table %s", workerNum, tableName)
 			defer wg.Done()
+			defer close(doneChan)
 			for {
 				select {
-				case rng := <-blockRanges: // TODO: we don't want to trigger the public.nodes iterator more than once
+				case rng := <-blockRanges:
+					logrus.Debugf("table %s worker %d received block range (%d, %d)", tableName, workerNum, rng[0], rng[1])
 					oldModels, err := NewTableReadModels(tableName)
+					if err != nil {
+						errChan <- fmt.Errorf("table %s worker %d unable to create tabel models for range (%d, %d): %v", tableName, workerNum, rng[0], rng[1], err)
+						readGapChan <- rng
+						continue
+					}
 					if err := s.reader.Read(rng, readPgStr, oldModels); err != nil {
-						s.errChan <- fmt.Errorf("table %s worker %d read error (%v) in range (%d, %d)", tableName, workerNum, err, rng[0], rng[1])
+						errChan <- fmt.Errorf("table %s worker %d read error (%v) in range (%d, %d)", tableName, workerNum, err, rng[0], rng[1])
+						readGapChan <- rng
+						continue
+					}
+					if reflect.Indirect(reflect.ValueOf(oldModels)).Len() == 0 {
 						if tableName == EthHeaders || tableName == EthState || tableName == EthAccounts {
 							// all other tables can, at least in theory, be empty within a range
 							// e.g. a block that has no txs or uncles will only
 							// have a header and an updated state account for the miner's reward
-							s.readGapsChan <- rng
+							readGapChan <- rng
+						} else {
+							logrus.Infof("table %s worker %d finished range (%d, %d)", tableName, workerNum, rng[0], rng[1])
 						}
 						continue
 					}
 					newModels, gaps, err := transformer.Transform(oldModels, rng)
 					if err != nil {
-						s.errChan <- fmt.Errorf("table %s worker %d transform error (%v) in range (%d, %d)", tableName, workerNum, err, rng[0], rng[1])
-						s.writeFailuresChan <- rng
+						errChan <- fmt.Errorf("table %s worker %d transform error (%v) in range (%d, %d)", tableName, workerNum, err, rng[0], rng[1])
+						writeGapChan <- rng
 						continue
 					}
 					if err := s.writer.Write(writePgStr, newModels); err != nil {
-						s.errChan <- fmt.Errorf("table %s worker %d write error (%v) in range (%d, %d)", tableName, workerNum, err, rng[0], rng[1])
-						s.writeFailuresChan <- rng
+						errChan <- fmt.Errorf("table %s worker %d write error (%v) in range (%d, %d)", tableName, workerNum, err, rng[0], rng[1])
+						writeGapChan <- rng
 						continue
 					}
-					for _, gap := range gaps { // TODO: this will send duplicate ranges if running header, state, or account processing simultaneously
-						s.readGapsChan <- gap
+					for _, gap := range gaps {
+						readGapChan <- gap
 					}
+					logrus.Infof("table %s worker %d finished range (%d, %d)", tableName, workerNum, rng[0], rng[1])
 				case <-s.closeChan:
+					logrus.Infof("quitting migration worker %d for table %s", workerNum, tableName)
 					return
 				default:
 					select {
-					case <-doneChan:
+					case <-quitChan:
 						logrus.Infof("quitting migration worker %d for table %s", workerNum, tableName)
 						return
 					default:
@@ -128,7 +142,7 @@ func (s *Service) Migrate(wg *sync.WaitGroup, tableName TableName, blockRanges <
 		}(workerNum, tableName)
 	}
 
-	return s.readGapsChan, s.writeFailuresChan, doneChan, s.errChan
+	return readGapChan, writeGapChan, doneChan, quitChan, errChan
 }
 
 // Close satisfied io.Closer

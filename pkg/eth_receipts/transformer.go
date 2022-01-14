@@ -33,12 +33,12 @@ func NewTransformer() interfaces.Transformer {
 
 // Transform satisfies interfaces.Transformer for eth.receipt_cids
 func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error) {
-	v2Models, ok := models.([]ReceiptModelV2WithMeta)
+	v2Models, ok := models.(*[]ReceiptModelV2WithMeta)
 	if !ok {
-		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", make([]ReceiptModelV2WithMeta, 0), v2Models)
+		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", new([]ReceiptModelV2WithMeta), models)
 	}
-	v3Models := make([]ReceiptModelV3, len(v2Models))
-	for i, model := range v2Models {
+	v3Models := make([]ReceiptModelV3, len(*v2Models))
+	for i, model := range *v2Models {
 		v3Models[i] = ReceiptModelV3{
 			TxID:         model.TxHash,
 			LeafCID:      model.LeafCID,

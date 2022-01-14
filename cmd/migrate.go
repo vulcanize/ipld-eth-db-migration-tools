@@ -67,31 +67,29 @@ func migrate() {
 	}
 
 	wg := new(sync.WaitGroup)
-	quitChan := make(chan struct{})
 	for _, table := range tables {
-		migrateTable(wg, migrator, table, ranges, quitChan)
+		migrateTable(wg, migrator, table, ranges)
 	}
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt)
 	<-shutdown
-	close(quitChan)
 	migrator.Close()
 	wg.Wait()
 }
 
 func migrateTable(wg *sync.WaitGroup, migrator migration_tools.Migrator,
-	tableName migration_tools.TableName, blockRanges [][2]uint64, quitChan chan struct{}) {
+	tableName migration_tools.TableName, blockRanges [][2]uint64) {
 
 	rangeChan := make(chan [2]uint64)
-	readGapsChan, writeGapsChan, doneChan, errChan := migrator.Migrate(wg, tableName, rangeChan)
+	readGapsChan, writeGapsChan, doneChan, quitChan, errChan := migrator.Migrate(wg, tableName, rangeChan)
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for i, blockRange := range blockRanges {
 			select {
-			case <-quitChan:
+			case <-doneChan:
 				logWithCommand.Infof("closing sendRanges subprocess\r\nunsent ranges: %+v", blockRanges[i:])
 				return
 			default:
@@ -103,7 +101,7 @@ func migrateTable(wg *sync.WaitGroup, migrator migration_tools.Migrator,
 			}
 		}
 		logWithCommand.Infof("finished sending block ranges for table %s\r\nshutting down migration process for table %s", tableName, tableName)
-		close(doneChan)
+		close(quitChan)
 	}()
 
 	wg.Add(1)
@@ -117,8 +115,6 @@ func migrateTable(wg *sync.WaitGroup, migrator migration_tools.Migrator,
 				logWithCommand.Infof("Migrator %s table write gap: %v", tableName, writeGap)
 			case err := <-errChan:
 				logWithCommand.Errorf("Migrator %s table error: %v", tableName, err)
-			case <-quitChan:
-				return
 			case <-doneChan:
 				return
 			}

@@ -33,12 +33,12 @@ func NewTransformer() interfaces.Transformer {
 
 // Transform satisfies interfaces.Transformer for eth.storage_cids
 func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error) {
-	v2Models, ok := models.([]StorageModelV2WithMeta)
+	v2Models, ok := models.(*[]StorageModelV2WithMeta)
 	if !ok {
-		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", make([]StorageModelV2WithMeta, 0), v2Models)
+		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", new([]StorageModelV2WithMeta), models)
 	}
-	v3Models := make([]StorageModelV3, len(v2Models))
-	for i, model := range v2Models {
+	v3Models := make([]StorageModelV3, len(*v2Models))
+	for i, model := range *v2Models {
 		v3Models[i] = StorageModelV3{
 			HeaderID:   model.BlockHash,
 			StatePath:  model.StatePath,

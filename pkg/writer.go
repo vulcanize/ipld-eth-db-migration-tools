@@ -32,20 +32,6 @@ func NewWriter(db *sqlx.DB) *Writer {
 
 // Write satisfies interfaces.Writer for public.nodes
 func (w *Writer) Write(pgStr WritePgStr, models interface{}) error {
-	tx, err := w.db.Beginx()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if p := recover(); p != nil {
-			rollback(tx)
-			panic(p)
-		} else if err != nil {
-			rollback(tx)
-		} else {
-			err = tx.Commit()
-		}
-	}()
-	_, err = tx.NamedQuery(string(pgStr), models)
+	_, err := w.db.NamedQuery(string(pgStr), models)
 	return err
 }

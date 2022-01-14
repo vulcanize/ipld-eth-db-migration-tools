@@ -33,12 +33,12 @@ func NewTransformer() interfaces.Transformer {
 
 // Transform satisfies interfaces.Transformer for eth.access_list_elements
 func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error) {
-	v2Models, ok := models.([]AccessListElementModelV2WithMeta)
+	v2Models, ok := models.(*[]AccessListElementModelV2WithMeta)
 	if !ok {
-		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", make([]AccessListElementModelV2WithMeta, 0), v2Models)
+		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", new([]AccessListElementModelV2WithMeta), models)
 	}
-	v3Models := make([]AccessListElementModelV3, len(v2Models))
-	for i, model := range v2Models {
+	v3Models := make([]AccessListElementModelV3, len(*v2Models))
+	for i, model := range *v2Models {
 		v3Models[i] = AccessListElementModelV3{
 			Index:       model.Index,
 			TxID:        model.TxHash,

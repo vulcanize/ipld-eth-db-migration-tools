@@ -29,8 +29,8 @@ const (
 									INNER JOIN eth.header_cids ON (transaction_cids.header_id = header_cids.block_hash)
 									WHERE NOT EXISTS (
 										SELECT
-										FROM public.blocks ipld
-										WHERE log_cids.leaf_mh_key = ipld.key
+										FROM public.blocks
+										WHERE log_cids.leaf_mh_key = public.blocks.key
 										)
 									AND block_number BETWEEN $1 AND $2`
 	PgReadNodesStr ReadPgStr = `SELECT client_name, genesis_block, network_id, node_id, nodes_chain_id

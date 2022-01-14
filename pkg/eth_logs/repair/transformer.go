@@ -22,7 +22,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/statediff/indexer/ipfs/ipld"
+	"github.com/ethereum/go-ethereum/statediff/indexer/ipld"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	dshelp "github.com/ipfs/go-ipfs-ds-help"
 	"github.com/multiformats/go-multihash"
@@ -43,12 +43,12 @@ func NewTransformer() interfaces.Transformer {
 
 // Transform satisfies interfaces.Transformer for eth.log_cids
 func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error) {
-	v3Models, ok := models.([]eth_logs.LogModelV3)
+	v3Models, ok := models.(*[]eth_logs.LogModelV3)
 	if !ok {
-		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", make([]eth_logs.LogModelV3, 0), v3Models)
+		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", new([]eth_logs.LogModelV3), models)
 	}
-	missingIPLDs := make([]public_blocks.IPLDModel, len(v3Models))
-	for i, model := range v3Models {
+	missingIPLDs := make([]public_blocks.IPLDModel, len(*v3Models))
+	for i, model := range *v3Models {
 		log := new(types.Log)
 		log.Address = common.HexToAddress(model.Address)
 		log.Data = model.Data
@@ -74,7 +74,7 @@ func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (in
 			Data: data,
 		}
 	}
-	return v3Models, nil, nil
+	return missingIPLDs, nil, nil
 }
 
 func rlpAndBlockStoreKey(log *types.Log) ([]byte, string, error) {
