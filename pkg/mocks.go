@@ -41,7 +41,6 @@ import (
 // Test variables
 var (
 	// block data
-	// TODO: Update this to `MainnetChainConfig` when `LondonBlock` is added
 	TestConfig  = params.RopstenChainConfig
 	BlockNumber = TestConfig.LondonBlock
 	MockHeader  = types.Header{
@@ -75,14 +74,32 @@ var (
 		Topics:  []common.Hash{mockTopic21, mockTopic22},
 		Data:    []byte{},
 	}
-	ShortLog = &types.Log{
+	MockLog3 = &types.Log{
+		Address: Address,
+		Topics:  []common.Hash{mockTopic11, mockTopic22},
+		Data:    []byte{},
+	}
+	MockLog4 = &types.Log{
+		Address: AnotherAddress,
+		Topics:  []common.Hash{mockTopic21, mockTopic12},
+		Data:    []byte{},
+	}
+	ShortLog1 = &types.Log{
 		Address: AnotherAddress,
 		Topics:  []common.Hash{},
 		Data:    []byte{},
 	}
-	ShortLogRLP, _ = rlp.EncodeToBytes(ShortLog)
-	ShortLogCID, _ = ipld.RawdataToCid(ipld.MEthLog, ShortLogRLP, multihash.KECCAK_256)
-	ShotLogMhKey   = blockstore.BlockPrefix.String() + dshelp.MultihashToDsKey(ShortLogCID.Hash()).String()
+	ShortLog1RLP, _ = rlp.EncodeToBytes(ShortLog1)
+	ShortLog1CID, _ = ipld.RawdataToCid(ipld.MEthLog, ShortLog1RLP, multihash.KECCAK_256)
+	ShotLog1MhKey   = blockstore.BlockPrefix.String() + dshelp.MultihashToDsKey(ShortLog1CID.Hash()).String()
+	ShortLog2       = &types.Log{
+		Address: Address,
+		Topics:  []common.Hash{},
+		Data:    []byte{},
+	}
+	ShortLog2RLP, _ = rlp.EncodeToBytes(ShortLog2)
+	ShortLog2CID, _ = ipld.RawdataToCid(ipld.MEthLog, ShortLog2RLP, multihash.KECCAK_256)
+	ShotLog2MhKey   = blockstore.BlockPrefix.String() + dshelp.MultihashToDsKey(ShortLog2CID.Hash()).String()
 
 	// access list entries
 	AccessListEntry1 = types.AccessTuple{
@@ -175,83 +192,11 @@ var (
 	}
 )
 
-type LegacyData struct {
-	Config               *params.ChainConfig
-	BlockNumber          *big.Int
-	MockHeader           types.Header
-	MockTransactions     types.Transactions
-	MockReceipts         types.Receipts
-	SenderAddr           common.Address
-	MockBlock            *types.Block
-	MockHeaderRlp        []byte
-	Address              []byte
-	AnotherAddress       []byte
-	ContractAddress      common.Address
-	MockContractByteCode []byte
-	MockLog1             *types.Log
-	MockLog2             *types.Log
-	StorageLeafKey       []byte
-	MockStorageLeafKey   []byte
-	StorageLeafNode      []byte
-	ContractLeafKey      []byte
-	ContractAccount      []byte
-	ContractPartialPath  []byte
-	ContractLeafNode     []byte
-	AccountRoot          string
-	AccountLeafNode      []byte
-	StateDiffs           []sdtypes.StateNode
-}
-
-// createLegacyTransactionsAndReceipts is a helper function to generate signed mock legacy transactions and mock receipts with mock logs
-func createLegacyTransactionsAndReceipts(config *params.ChainConfig, blockNumber *big.Int) (types.Transactions, types.Receipts, common.Address) {
-	// make transactions
-	trx1 := types.NewTransaction(0, Address, big.NewInt(1000), 50, big.NewInt(100), []byte{})
-	trx2 := types.NewTransaction(1, AnotherAddress, big.NewInt(2000), 100, big.NewInt(200), []byte{})
-	trx3 := types.NewContractCreation(2, big.NewInt(1500), 75, big.NewInt(150), MockContractByteCode)
-
-	transactionSigner := types.MakeSigner(config, blockNumber)
-	mockCurve := elliptic.P256()
-	mockPrvKey, err := ecdsa.GenerateKey(mockCurve, rand.Reader)
-	if err != nil {
-		log.Crit(err.Error())
-	}
-	signedTrx1, err := types.SignTx(trx1, transactionSigner, mockPrvKey)
-	if err != nil {
-		log.Crit(err.Error())
-	}
-	signedTrx2, err := types.SignTx(trx2, transactionSigner, mockPrvKey)
-	if err != nil {
-		log.Crit(err.Error())
-	}
-	signedTrx3, err := types.SignTx(trx3, transactionSigner, mockPrvKey)
-	if err != nil {
-		log.Crit(err.Error())
-	}
-
-	senderAddr, err := types.Sender(transactionSigner, signedTrx1) // same for both trx
-	if err != nil {
-		log.Crit(err.Error())
-	}
-
-	// make receipts
-	mockReceipt1 := types.NewReceipt(nil, false, 50)
-	mockReceipt1.Logs = []*types.Log{MockLog1}
-	mockReceipt1.TxHash = signedTrx1.Hash()
-	mockReceipt2 := types.NewReceipt(common.HexToHash("0x1").Bytes(), false, 100)
-	mockReceipt2.Logs = []*types.Log{MockLog2}
-	mockReceipt2.TxHash = signedTrx2.Hash()
-	mockReceipt3 := types.NewReceipt(common.HexToHash("0x2").Bytes(), false, 75)
-	mockReceipt3.Logs = []*types.Log{}
-	mockReceipt3.TxHash = signedTrx3.Hash()
-
-	return types.Transactions{signedTrx1, signedTrx2, signedTrx3}, types.Receipts{mockReceipt1, mockReceipt2, mockReceipt3}, senderAddr
-}
-
 // createTransactionsAndReceipts is a helper function to generate signed mock transactions and mock receipts with mock logs
 func createTransactionsAndReceipts(config *params.ChainConfig, blockNumber *big.Int) (types.Transactions, types.Receipts, common.Address) {
 	// make transactions
 	trx1 := types.NewTransaction(0, Address, big.NewInt(1000), 50, big.NewInt(100), []byte{})
-	trx2 := types.NewTransaction(1, AnotherAddress, big.NewInt(2000), 100, big.NewInt(200), []byte{})
+	trx2 := types.NewTransaction(1, Address, big.NewInt(2000), 100, big.NewInt(200), []byte{})
 	trx3 := types.NewContractCreation(2, big.NewInt(1500), 75, big.NewInt(150), MockContractByteCode)
 	trx4 := types.NewTx(&types.AccessListTx{
 		ChainID:  config.ChainID,
@@ -318,7 +263,7 @@ func createTransactionsAndReceipts(config *params.ChainConfig, blockNumber *big.
 	mockReceipt1.Logs = []*types.Log{MockLog1}
 	mockReceipt1.TxHash = signedTrx1.Hash()
 	mockReceipt2 := types.NewReceipt(common.HexToHash("0x1").Bytes(), false, 100)
-	mockReceipt2.Logs = []*types.Log{MockLog2}
+	mockReceipt2.Logs = []*types.Log{MockLog2, ShortLog1}
 	mockReceipt2.TxHash = signedTrx2.Hash()
 	mockReceipt3 := types.NewReceipt(common.HexToHash("0x2").Bytes(), false, 75)
 	mockReceipt3.Logs = []*types.Log{}
@@ -328,7 +273,7 @@ func createTransactionsAndReceipts(config *params.ChainConfig, blockNumber *big.
 		PostState:         common.HexToHash("0x3").Bytes(),
 		Status:            types.ReceiptStatusSuccessful,
 		CumulativeGasUsed: 175,
-		Logs:              []*types.Log{MockLog1, MockLog2, ShortLog},
+		Logs:              []*types.Log{MockLog3, MockLog4, ShortLog2},
 		TxHash:            signedTrx4.Hash(),
 	}
 	mockReceipt5 := &types.Receipt{

@@ -18,16 +18,15 @@ package migration_tools
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/sirupsen/logrus"
+	"github.com/ethereum/go-ethereum/statediff/indexer/database/sql/postgres"
 
 	"github.com/jmoiron/sqlx"
 )
 
 // NewDB returns a new sqlx.DB instance using the provided config
-func NewDB(ctx context.Context, conf DBConfig) (*sqlx.DB, error) {
-	db, err := sqlx.ConnectContext(ctx, "postgres", conf.ConnString())
+func NewDB(ctx context.Context, conf postgres.Config) (*sqlx.DB, error) {
+	db, err := sqlx.ConnectContext(ctx, "postgres", conf.DbConnectionString())
 	if err != nil {
 		return nil, err
 	}
@@ -42,24 +41,4 @@ func NewDB(ctx context.Context, conf DBConfig) (*sqlx.DB, error) {
 		db.SetConnMaxLifetime(lifetime)
 	}
 	return db, nil
-}
-
-// ConnString constructs and returns the connection string from the config
-func (c DBConfig) ConnString() string {
-	if len(c.Username) > 0 && len(c.Password) > 0 {
-		return fmt.Sprintf("postgresql://%s:%s@%s:%d/%s?sslmode=disable",
-			c.Username, c.Password, c.Hostname, c.Port, c.DatabaseName)
-	}
-	if len(c.Username) > 0 && len(c.Password) == 0 {
-		return fmt.Sprintf("postgresql://%s@%s:%d/%s?sslmode=disable",
-			c.Username, c.Hostname, c.Port, c.DatabaseName)
-	}
-	return fmt.Sprintf("postgresql://%s:%d/%s?sslmode=disable", c.Hostname, c.Port, c.DatabaseName)
-}
-
-// rollback sql transaction and log any error
-func rollback(tx *sqlx.Tx) {
-	if err := tx.Rollback(); err != nil {
-		logrus.Error(err.Error())
-	}
 }

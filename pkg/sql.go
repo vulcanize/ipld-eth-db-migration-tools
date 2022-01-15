@@ -91,7 +91,8 @@ const (
 									INNER JOIN eth.header_cids ON (transaction_cids.header_id = header_cids.id)
 									WHERE block_number BETWEEN $1 AND $2`
 
-	PgWriteIPLDsStr WritePgStr = `INSERT INTO public.blocks (key, data) VALUES (:key, :data)`
+	PgWriteIPLDsStr WritePgStr = `INSERT INTO public.blocks (key, data) VALUES (:key, :data)
+									ON CONFLICT (key) DO NOTHING`
 
 	PgWriteEthUnclesStr WritePgStr = `INSERT INTO eth.uncle_cids (header_id, block_hash, parent_hash, cid, mh_key, reward)
 							VALUES (:header_id, :block_hash, :parent_hash,
@@ -118,7 +119,7 @@ const (
 								VALUES (:tx_id, :leaf_cid, :leaf_mh_key, :post_status, :post_state,
 								:contract, :contract_hash, :log_root)`
 
-	PgWriteEthLogsStr WritePgStr = `INSERT INTO eth.logs_cids (rct_id, leaf_cid, leaf_mh_key, address, index, log_data, topic0,
+	PgWriteEthLogsStr WritePgStr = `INSERT INTO eth.log_cids (rct_id, leaf_cid, leaf_mh_key, address, index, log_data, topic0,
 							topic1, topic2, topic3)
 							VALUES (:rct_id, :leaf_cid, :leaf_mh_key, :address, :index, :log_data, :topic0,
 							:topic1, :topic2, :topic3)`
