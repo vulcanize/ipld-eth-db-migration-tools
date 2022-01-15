@@ -36,14 +36,14 @@ func NewTransformer() interfaces.Transformer {
 
 // Transform satisfies interfaces.Transformer for eth.header_cids
 func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error) {
-	v2Models, ok := models.([]HeaderModelV2WithMeta)
+	v2Models, ok := models.(*[]HeaderModelV2WithMeta)
 	if !ok {
-		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", make([]HeaderModelV2WithMeta, 0), v2Models)
+		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", new([]HeaderModelV2WithMeta), models)
 	}
-	v3Models := make([]HeaderModelV3, len(v2Models))
+	v3Models := make([]HeaderModelV3, len(*v2Models))
 	expectedHeight := expectedRange[0]
 	missingHeights := make([][2]uint64, 0)
-	for i, model := range v2Models {
+	for i, model := range *v2Models {
 		height, err := strconv.ParseUint(model.BlockNumber, 10, 64)
 		if err != nil {
 			return nil, [][2]uint64{expectedRange}, err

@@ -14,28 +14,23 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_nodes
+package migration_tools_test
 
 import (
-	"fmt"
+	"os"
+	"testing"
 
-	"github.com/vulcanize/migration-tools/pkg/interfaces"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/sirupsen/logrus"
 )
 
-// Transformer for transforming v2 DB public.nodes models to v3 DB models
-type Transformer struct {
+func TestETHSuite(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "migration tools suite test")
 }
 
-// NewTransformer satisfies interfaces.TransformerConstructor for public.nodes
-func NewTransformer() interfaces.Transformer {
-	return &Transformer{}
-}
-
-// Transform satisfies interfaces.Transformer for public.nodes
-func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error) {
-	nodeModels, ok := models.(*[]NodeModel)
-	if !ok {
-		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", new([]NodeModel), models)
-	}
-	return *nodeModels, nil, nil
-}
+var _ = BeforeSuite(func() {
+	logrus.SetOutput(os.Stdout)
+	logrus.SetLevel(logrus.DebugLevel)
+})

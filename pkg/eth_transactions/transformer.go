@@ -34,12 +34,12 @@ func NewTransformer() interfaces.Transformer {
 
 // Transform satisfies interfaces.Transformer for eth.transaction_cids
 func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error) {
-	v2Models, ok := models.([]TransactionModelV2WithMeta)
+	v2Models, ok := models.(*[]TransactionModelV2WithMeta)
 	if !ok {
-		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", make([]TransactionModelV2WithMeta, 0), v2Models)
+		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", new([]TransactionModelV2WithMeta), models)
 	}
-	v3Models := make([]TransactionModelV3, len(v2Models))
-	for i, model := range v2Models {
+	v3Models := make([]TransactionModelV3, len(*v2Models))
+	for i, model := range *v2Models {
 		tx := new(types.Transaction)
 		if err := tx.UnmarshalBinary(model.IPLD); err != nil {
 			return nil, [][2]uint64{expectedRange}, err

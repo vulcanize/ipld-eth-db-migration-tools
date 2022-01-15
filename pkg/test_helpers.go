@@ -14,28 +14,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_nodes
+package migration_tools
 
 import (
-	"fmt"
+	"context"
 
-	"github.com/vulcanize/migration-tools/pkg/interfaces"
+	"github.com/ethereum/go-ethereum/statediff/indexer/database/sql"
+	"github.com/ethereum/go-ethereum/statediff/indexer/database/sql/postgres"
+	"github.com/ethereum/go-ethereum/statediff/indexer/node"
 )
 
-// Transformer for transforming v2 DB public.nodes models to v3 DB models
-type Transformer struct {
-}
-
-// NewTransformer satisfies interfaces.TransformerConstructor for public.nodes
-func NewTransformer() interfaces.Transformer {
-	return &Transformer{}
-}
-
-// Transform satisfies interfaces.Transformer for public.nodes
-func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error) {
-	nodeModels, ok := models.(*[]NodeModel)
-	if !ok {
-		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", new([]NodeModel), models)
+// SetupDB sets up the sql.Database
+func SetupDB(config postgres.Config) (sql.Database, error) {
+	driver, err := postgres.NewSQLXDriver(context.Background(), config, node.Info{})
+	if err != nil {
+		return nil, err
 	}
-	return *nodeModels, nil, nil
+	return postgres.NewPostgresDB(driver), nil
 }

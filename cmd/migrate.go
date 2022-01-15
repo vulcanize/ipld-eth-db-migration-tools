@@ -55,38 +55,71 @@ func migrate() {
 	if err != nil {
 		logWithCommand.Fatalf("failed to initialize a new Migrator: %v", err)
 	}
-	wg := new(sync.WaitGroup)
+
 	tables, err := getTableNames()
 	if err != nil {
 		logWithCommand.Fatalf("failed to generate set of TableNames to process: %v", err)
 	}
-	rangeChan := make(chan [2]uint64)
-	readGapsChan, writeGapsChan, _, errChan := migrator.Migrate(wg, tables, rangeChan)
-	quitChan := make(chan struct{})
-	if err := sendRanges(wg, rangeChan, quitChan); err != nil {
-		logWithCommand.Fatalf("sendRanges subprocess failure: %v", err)
+
+	ranges, err := getRanges()
+	if err != nil {
+		logWithCommand.Fatalf("failed to load block ranges to process: %v", err)
 	}
+
+	wg := new(sync.WaitGroup)
+	for _, table := range tables {
+		migrateTable(wg, migrator, table, ranges)
+	}
+
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, os.Interrupt)
+	<-shutdown
+	migrator.Close()
+	wg.Wait()
+}
+
+func migrateTable(wg *sync.WaitGroup, migrator migration_tools.Migrator,
+	tableName migration_tools.TableName, blockRanges [][2]uint64) {
+
+	rangeChan := make(chan [2]uint64)
+	readGapsChan, writeGapsChan, doneChan, quitChan, errChan := migrator.Migrate(wg, tableName, rangeChan)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i, blockRange := range blockRanges {
+			select {
+			case <-doneChan:
+				logWithCommand.Infof("closing sendRanges subprocess\r\nunsent ranges: %+v", blockRanges[i:])
+				return
+			default:
+				rangeChan <- blockRange
+			}
+			if tableName == migration_tools.PublicNodes {
+				// public nodes will be migrated in one batch, since it is not segmented by block height
+				break
+			}
+		}
+		logWithCommand.Infof("finished sending block ranges for table %s\r\nshutting down migration process for table %s", tableName, tableName)
+		close(quitChan)
+	}()
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for {
 			select {
 			case readGap := <-readGapsChan:
-				logWithCommand.Infof("Migrator read gap: %v", readGap)
+				logWithCommand.Infof("Migrator %s table read gap: %v", tableName, readGap)
 			case writeGap := <-writeGapsChan:
-				logWithCommand.Infof("Migrator write gap: %v", writeGap)
+				logWithCommand.Infof("Migrator %s table write gap: %v", tableName, writeGap)
 			case err := <-errChan:
-				logWithCommand.Errorf("Migrator error: %v", err)
-			case <-quitChan:
+				logWithCommand.Errorf("Migrator %s table error: %v", tableName, err)
+			case <-doneChan:
 				return
 			}
 		}
 	}()
-	shutdown := make(chan os.Signal, 1)
-	signal.Notify(shutdown, os.Interrupt)
-	<-shutdown
-	migrator.Close()
-	wg.Wait()
 }
 
 func getTableNames() ([]migration_tools.TableName, error) {
@@ -106,7 +139,7 @@ func getTableNames() ([]migration_tools.TableName, error) {
 	return tableNames, nil
 }
 
-func sendRanges(wg *sync.WaitGroup, rangeChan chan [2]uint64, quitChan chan struct{}) error {
+func getRanges() ([][2]uint64, error) {
 	var blockRanges [][2]uint64
 	viper.UnmarshalKey(migration_tools.TOML_MIGRATION_RANGES, &blockRanges)
 	if viper.IsSet(migration_tools.TOML_MIGRATION_START) && viper.IsSet(migration_tools.TOML_MIGRATION_STOP) {
@@ -115,23 +148,9 @@ func sendRanges(wg *sync.WaitGroup, rangeChan chan [2]uint64, quitChan chan stru
 		blockRanges = append(blockRanges, [2]uint64{hardStart, hardStop})
 	}
 	if len(blockRanges) == 0 {
-		return errors.New("migrator needs to be configured with a set of block ranges to process")
+		return nil, errors.New("migrator needs to be configured with a set of block ranges to process")
 	}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for i, blockRange := range blockRanges {
-			select {
-			case <-quitChan:
-				logWithCommand.Infof("closing sendRanges subprocess\r\nunsent ranges: %+v", blockRanges[i:])
-				return
-			default:
-				rangeChan <- blockRange
-			}
-		}
-		logWithCommand.Infof("sendRanges subprocess has finished sending all of its ranges")
-	}()
-	return nil
+	return blockRanges, nil
 }
 
 func init() {

@@ -23,6 +23,16 @@ type ReadPgStr string
 type WritePgStr string
 
 const (
+	PgReadBrokenLogsStr ReadPgStr = `SELECT eth.log_cids.*
+									FROM eth.log_cids
+									INNER JOIN eth.transaction_cids ON (log_cids.rct_id = transaction_cids.tx_hash)
+									INNER JOIN eth.header_cids ON (transaction_cids.header_id = header_cids.block_hash)
+									WHERE NOT EXISTS (
+										SELECT
+										FROM public.blocks
+										WHERE log_cids.leaf_mh_key = public.blocks.key
+										)
+									AND block_number BETWEEN $1 AND $2`
 	PgReadNodesStr ReadPgStr = `SELECT client_name, genesis_block, network_id, node_id, nodes_chain_id
 						FROM public.nodes`
 
@@ -81,16 +91,16 @@ const (
 									INNER JOIN eth.header_cids ON (transaction_cids.header_id = header_cids.id)
 									WHERE block_number BETWEEN $1 AND $2`
 
+	PgWriteIPLDsStr WritePgStr = `INSERT INTO public.blocks (key, data) VALUES (:key, :data)`
+
 	PgWriteEthUnclesStr WritePgStr = `INSERT INTO eth.uncle_cids (header_id, block_hash, parent_hash, cid, mh_key, reward)
-							VALUES (unnest($1::VARCHAR(66)[]), unnest($2::VARCHAR(66)[]), unnest($3::VARCHAR(66)[]),
-							unnest($4::TEXT[]), unnest($5::TEXT[]), unnest($6::NUMERIC[]))`
+							VALUES (:header_id, :block_hash, :parent_hash,
+							:cid, :mh_key, :reward)`
 
 	PgWriteEthTransactionsStr WritePgStr = `INSERT INTO eth.transaction_cids (header_id, index, tx_hash, cid, mh_key, dst, src,
 									tx_data, tx_type, value)
-									VALUES (unnest($1::VARCHAR(66)[]), unnest($2::INTEGER[]), unnest($3::VARCHAR(66)[]),
-									unnest($4::TEXT[]), unnest($5::TEXT[]), unnest($6::VARCHAR(66)[]),
-									unnest($7::VARCHAR(66)[]), unnest($8::BYTEA[]), unnest($9::INTEGER[]),
-									unnest($10::NUMERIC[]))`
+									VALUES (:header_id, :index, :tx_hash, :cid, :mh_key, :dst, :src,
+									:tx_data, :tx_type, :value)`
 
 	PgWriteEthStorageStr WritePgStr = `INSERT INTO eth.storage_cids (header_id, state_path, storage_path, storage_leaf_key, node_type,
 							cid, mh_key, diff)

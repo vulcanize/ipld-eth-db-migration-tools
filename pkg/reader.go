@@ -43,20 +43,5 @@ func NewReader(db *sqlx.DB) *Reader {
 // Read satisfies interfaces.Reader for eth.log_cids
 // Read is safe for concurrent use, as the only shared state is the concurrent safe *sqlx.DB
 func (r *Reader) Read(blockRange [2]uint64, pgStr ReadPgStr, models interface{}) error {
-	tx, err := r.db.Beginx()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if p := recover(); p != nil {
-			rollback(tx)
-			panic(p)
-		} else if err != nil {
-			rollback(tx)
-		} else {
-			err = tx.Commit()
-		}
-	}()
-	err = tx.Select(models, string(pgStr), blockRange[0], blockRange[1])
-	return err
+	return r.db.Select(models, string(pgStr), blockRange[0], blockRange[1])
 }

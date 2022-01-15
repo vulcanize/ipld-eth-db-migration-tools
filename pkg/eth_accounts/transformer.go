@@ -34,14 +34,14 @@ func NewTransformer() interfaces.Transformer {
 
 // Transform satisfies interfaces.Transformer for eth.state_accounts
 func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (interface{}, [][2]uint64, error) {
-	v2Models, ok := models.([]AccountModelV2WithMeta)
+	v2Models, ok := models.(*[]AccountModelV2WithMeta)
 	if !ok {
-		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", make([]AccountModelV2WithMeta, 0), v2Models)
+		return nil, [][2]uint64{expectedRange}, fmt.Errorf("expected models of type %T, got %T", new([]AccountModelV2WithMeta), models)
 	}
-	v3Models := make([]AccountModelV3, len(v2Models))
+	v3Models := make([]AccountModelV3, len(*v2Models))
 	expectedHeight := expectedRange[0]
 	missingHeights := make([][2]uint64, 0)
-	for i, model := range v2Models {
+	for i, model := range *v2Models {
 		height, err := strconv.ParseUint(model.BlockNumber, 10, 64)
 		if err != nil {
 			return nil, [][2]uint64{expectedRange}, fmt.Errorf("EthAccount transformer unable to parse blocknumber %s", model.BlockHash)

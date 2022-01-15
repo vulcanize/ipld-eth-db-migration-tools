@@ -14,24 +14,10 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package migration_tools
+package public_blocks
 
-import (
-	"github.com/jmoiron/sqlx"
-)
-
-// Writer struct for writing v3 DB public.nodes models
-type Writer struct {
-	db *sqlx.DB
-}
-
-// NewWriter satisfies interfaces.WriterConstructor for public.nodes
-func NewWriter(db *sqlx.DB) *Writer {
-	return &Writer{db: db}
-}
-
-// Write satisfies interfaces.Writer for public.nodes
-func (w *Writer) Write(pgStr WritePgStr, models interface{}) error {
-	_, err := w.db.NamedQuery(string(pgStr), models)
-	return err
+// IPLDModel is the v2 and v3 model for public.blocks
+type IPLDModel struct {
+	Key  string `db:"key"`
+	Data []byte `db:"data"`
 }
