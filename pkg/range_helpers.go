@@ -43,7 +43,7 @@ func SegmentRangeByChunkSize(chunkSize, start, stop uint64) [][2]uint64 {
 	for i := uint64(0); i < numOfChunks; i++ {
 		chunkStart := start + (i * chunkSize)
 		chunkEnd := chunkStart + chunkSize - 1
-		chunks[i] = [2]uint64{start, chunkEnd}
+		chunks[i] = [2]uint64{chunkStart, chunkEnd}
 		if i == numOfChunks-1 && remainder != 0 {
 			chunks = append(chunks, [2]uint64{chunkEnd + 1, chunkEnd + remainder})
 		}

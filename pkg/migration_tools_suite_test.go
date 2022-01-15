@@ -20,7 +20,7 @@ import (
 	"os"
 	"testing"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/sirupsen/logrus"
 )
@@ -31,6 +31,6 @@ func TestETHSuite(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	logrus.SetOutput(os.Stdout)
 	logrus.SetLevel(logrus.DebugLevel)
+	logrus.SetOutput(os.Stdout)
 })

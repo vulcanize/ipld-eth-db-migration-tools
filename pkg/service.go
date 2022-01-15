@@ -112,12 +112,14 @@ func (s *Service) Migrate(wg *sync.WaitGroup, tableName TableName, blockRanges <
 						}
 						continue
 					}
+					logrus.Debugf("table %s worker %d block range (%d, %d) read models (count %d):\r\n%+v", tableName, workerNum, rng[0], rng[1], reflect.Indirect(reflect.ValueOf(oldModels)).Len(), oldModels)
 					newModels, gaps, err := transformer.Transform(oldModels, rng)
 					if err != nil {
 						errChan <- fmt.Errorf("table %s worker %d transform error (%v) in range (%d, %d)", tableName, workerNum, err, rng[0], rng[1])
 						writeGapChan <- rng
 						continue
 					}
+					logrus.Debugf("table %s worker %d block range (%d, %d) write models (count %d):\r\n%+v", tableName, workerNum, rng[0], rng[1], reflect.ValueOf(newModels).Len(), newModels)
 					if err := s.writer.Write(writePgStr, newModels); err != nil {
 						errChan <- fmt.Errorf("table %s worker %d write error (%v) in range (%d, %d)", tableName, workerNum, err, rng[0], rng[1])
 						writeGapChan <- rng

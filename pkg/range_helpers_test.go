@@ -16,13 +16,12 @@
 
 package migration_tools_test
 
-
 import (
 	"github.com/jmoiron/sqlx"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/vulcanize/migration-tools/pkg"
+	migration_tools "github.com/vulcanize/migration-tools/pkg"
 )
 
 type chunkSizeTestCase struct {
@@ -42,14 +41,26 @@ var chunkSizeTestCases = []chunkSizeTestCase{
 	{
 		Start:               0,
 		Stop:                10000,
+		ChunkSize:           19,
+		ExpectedNumOfChunks: ((10000 + 1) / 19) + 1,
+	},
+	{
+		Start:               0,
+		Stop:                10000,
 		ChunkSize:           100,
 		ExpectedNumOfChunks: ((10000 + 1) / 100) + 1,
 	},
 	{
-		Start:               11234252,
+		Start:               21534252,
 		Stop:                1123425221,
 		ChunkSize:           10000,
-		ExpectedNumOfChunks: ((1123425221 - 11234252 + 1) / 10000) + 1,
+		ExpectedNumOfChunks: ((1123425221 - 21534252 + 1) / 10000) + 1,
+	},
+	{
+		Start:               21534252,
+		Stop:                1123425221,
+		ChunkSize:           7712,
+		ExpectedNumOfChunks: ((1123425221 - 21534252 + 1) / 7712) + 1,
 	},
 	{
 		Start:               123,
@@ -72,21 +83,30 @@ var _ = Describe("Range Segmenting Helpers", Serial, func() {
 				segments := migration_tools.SegmentRangeByChunkSize(testCase.ChunkSize, testCase.Start, testCase.Stop)
 				Expect(uint64(len(segments))).To(Equal(testCase.ExpectedNumOfChunks))
 				Expect(segments[0][0]).To(Equal(testCase.Start))
+				Expect(segments[0][1]).To(Equal(testCase.Start + testCase.ChunkSize - 1))
+				Expect(segments[1][0]).To(Equal(testCase.Start + testCase.ChunkSize))
+				Expect(segments[1][1]).To(Equal(testCase.Start + testCase.ChunkSize + testCase.ChunkSize - 1))
+				rem := (testCase.Stop - testCase.Start + 1) % testCase.ChunkSize
+				if rem == 0 {
+					Expect(segments[len(segments)-1][0]).To(Equal(testCase.Stop - testCase.ChunkSize + 1))
+				} else {
+					Expect(segments[len(segments)-1][0]).To(Equal(testCase.Stop - rem + 1))
+				}
 				Expect(segments[len(segments)-1][1]).To(Equal(testCase.Stop))
 			}
 		})
 	})
 	Describe("DetectAndSegmentRangeByChunkSize", Serial, Label("test"), func() {
 		BeforeEach(func() {
-			tearDownSQLXDB(sqlxDB)
 			connStr := v3DBConfig.DbConnectionString()
 			sqlxDB, err = sqlx.Connect("postgres", connStr)
 			Expect(err).ToNot(HaveOccurred())
+			tearDownSQLXDB(sqlxDB)
 			header := migration_tools.MockHeader
 
 			_, err := sqlxDB.Exec(writeIPDL,
 				"mockMhKey",
-				[]byte{1,2,3,4})
+				[]byte{1, 2, 3, 4})
 			Expect(err).ToNot(HaveOccurred())
 
 			_, err = sqlxDB.Exec(writeNodeStr,
@@ -170,4 +190,3 @@ var _ = Describe("Range Segmenting Helpers", Serial, func() {
 		})
 	})
 })
-

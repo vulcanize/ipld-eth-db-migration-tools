@@ -18,19 +18,29 @@ package migration_tools_test
 
 import (
 	"bytes"
+	"math/rand"
+	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/ethereum/go-ethereum/statediff/indexer/database/sql"
+	"github.com/ethereum/go-ethereum/statediff/indexer/database/sql/postgres"
 	"github.com/ethereum/go-ethereum/statediff/indexer/interfaces"
 	"github.com/ethereum/go-ethereum/statediff/indexer/ipld"
 	"github.com/ipfs/go-cid"
+	blockstore "github.com/ipfs/go-ipfs-blockstore"
+	dshelp "github.com/ipfs/go-ipfs-ds-help"
 	"github.com/jmoiron/sqlx"
+	"github.com/multiformats/go-multihash"
+	. "github.com/onsi/gomega"
 
 	migration_tools "github.com/vulcanize/migration-tools/pkg"
 )
 
 var (
 	sqlxDB                                                *sqlx.DB
+	sqlDB                                                 sql.Database
 	err                                                   error
 	ind                                                   interfaces.StateDiffIndexer
 	migrator                                              migration_tools.Migrator
@@ -38,7 +48,20 @@ var (
 	mockBlock                                             *types.Block
 )
 
+var v3DBConfig = postgres.Config{
+	Hostname:     "localhost",
+	Port:         5432,
+	DatabaseName: "vulcanize_testing_v3",
+	Username:     "postgres",
+	Password:     "",
+}
+
+const writeNodeStr = `INSERT INTO public.nodes (client_name, genesis_block, network_id, node_id, chain_id)
+						VALUES ($1, $2, $3, $4, $5)`
+
 func init() {
+	rand.Seed(time.Now().UnixNano())
+
 	mockBlock = migration_tools.MockBlock
 	txs, rcts := migration_tools.MockBlock.Transactions(), migration_tools.MockReceipts
 
@@ -113,4 +136,60 @@ func init() {
 		rctleafNodeCids[idx] = rln.Cid()
 		orderedRctLeafNodes[idx] = rln.RawData()
 	}
+}
+
+func randomHash() common.Hash {
+	hash := make([]byte, 32)
+	rand.Read(hash)
+	return common.BytesToHash(hash)
+}
+
+func randomAddress() common.Address {
+	addr := make([]byte, 20)
+	rand.Read(addr)
+	return common.BytesToAddress(addr)
+}
+
+func randomBytes() []byte {
+	by := make([]byte, 256)
+	rand.Read(by)
+	return by
+}
+
+func keccak256ToMhKey(h []byte) string {
+	buf, err := multihash.Encode(h, multihash.KECCAK_256)
+	if err != nil {
+		panic(err)
+	}
+	return blockstore.BlockPrefix.String() + dshelp.MultihashToDsKey(multihash.Multihash(buf)).String()
+}
+
+func tearDownSQLXDB(db *sqlx.DB) {
+	tx, err := db.Begin()
+	Expect(err).ToNot(HaveOccurred())
+
+	_, err = tx.Exec(`DELETE FROM eth.header_cids`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(`DELETE FROM eth.uncle_cids`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(`DELETE FROM eth.transaction_cids`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(`DELETE FROM eth.receipt_cids`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(`DELETE FROM eth.state_cids`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(`DELETE FROM eth.storage_cids`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(`DELETE FROM eth.state_accounts`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(`DELETE FROM eth.access_list_elements`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(`DELETE FROM eth.log_cids`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(`DELETE FROM blocks`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(`DELETE FROM nodes`)
+	Expect(err).ToNot(HaveOccurred())
+	err = tx.Commit()
+	Expect(err).ToNot(HaveOccurred())
 }
