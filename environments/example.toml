@@ -1,38 +1,36 @@
 [migrator]
-    ranges = [
-        [0, 1000]
-    ]
+    ranges = []
     start = 0 # $MIGRATION_START
-    stop = 1000 # $MIGRATION_STOP
+    stop = 0 # $MIGRATION_STOP
     tableNames = [ # $MIGRATION_TABLE_NAMES
-        "headers",
-        "transactions",
-        "storage"
+        "eth.log_cids.repair"
     ]
-    workersPerTable = 1 # $MIGRATION_WORKERS_PER_TABLE
-    autoRange = false # $MIGRATION_AUTO_RANGE
+    workersPerTable = 10 # $MIGRATION_WORKERS_PER_TABLE
+    autoRange = true # $MIGRATION_AUTO_RANGE
     segmentSize = 10000 # $MIGRATION_AUTO_RANGE_SEGMENT_SIZE
 
 [log]
-    file = "path/to/log/file" # $LOGRUS_FILE
+    file = "logfile.txt" # $LOGRUS_FILE
     level = "info" # $LOGRUS_LEVEL
+    readGapsDir = "./readGaps/" # $LOG_READ_GAPS_DIR
+    writeGapsDir = "./writeGaps/" # $LOG_WRITE_GAPS_DIR
 
 [v2]
-    databaseName = "vulcanize_public_v2" # $V2_DATABASE_NAME
+    databaseName = "vulcanize_test_repair" # $V2_DATABASE_NAME
     databaseHostName = "localhost" # $V2_DATABASE_HOSTNAME
     databasePort = "5432" # $V2_DATABASE_PORT
-    databaseUser = "postgtres" # $V2_DATABASE_USER
+    databaseUser = "postgres" # $V2_DATABASE_USER
     databasePassword = "" # $V2_DATABASE_PASSWORD
-    databaseMaxIdleConns = 50 # $V2_DATABASE_MAX_IDLE_CONNECTIONS
-    databaseMaxOpenConns = 100 # $V2_DATABASE_MAX_OPEN_CONNECTIONS
+    databaseMaxIdleConns = 0 # $V2_DATABASE_MAX_IDLE_CONNECTIONS
+    databaseMaxOpenConns = 0 # $V2_DATABASE_MAX_OPEN_CONNECTIONS
     databaseMaxConnLifetime = 0 # $V2_DATABASE_MAX_CONN_LIFETIME
 
 [v3]
-    databaseName = "vulcanize_public_v2" # $V3_DATABASE_NAME
+    databaseName = "vulcanize_test_repair" # $V3_DATABASE_NAME
     databaseHostName = "localhost" # $V3_DATABASE_HOSTNAME
     databasePort = "5432" # $V3_DATABASE_PORT
-    databaseUser = "postgtres" # $V3_DATABASE_USER
+    databaseUser = "postgres" # $V3_DATABASE_USER
     databasePassword = "" # $V3_DATABASE_PASSWORD
-    databaseMaxIdleConns = 50 # $V3_DATABASE_MAX_IDLE_CONNECTIONS
-    databaseMaxOpenConns = 100 # $V3_DATABASE_MAX_OPEN_CONNECTIONS
+    databaseMaxIdleConns = 0 # $V3_DATABASE_MAX_IDLE_CONNECTIONS
+    databaseMaxOpenConns = 0 # $V3_DATABASE_MAX_OPEN_CONNECTIONS
     databaseMaxConnLifetime = 0 # $V3_DATABASE_MAX_CONN_LIFETIME

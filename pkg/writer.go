@@ -38,3 +38,8 @@ func (w *Writer) Write(pgStr WritePgStr, models interface{}) error {
 	}
 	return rows.Close()
 }
+
+// Close satisfies io.Closer
+func (w *Writer) Close() error {
+	return w.db.Close()
+}

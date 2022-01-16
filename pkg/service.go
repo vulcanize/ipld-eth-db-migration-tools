@@ -79,13 +79,13 @@ func (s *Service) Migrate(wg *sync.WaitGroup, tableName TableName, blockRanges <
 	readGapChan := make(chan [2]uint64)
 	writeGapChan := make(chan [2]uint64)
 	errChan := make(chan error)
+	innerWg := new(sync.WaitGroup)
 
 	for workerNum := 1; workerNum <= s.numWorkersPerTable; workerNum++ {
-		wg.Add(1)
+		innerWg.Add(1)
 		go func(workerNum int, tableName TableName) {
 			logrus.Infof("starting migration worker %d for table %s", workerNum, tableName)
-			defer wg.Done()
-			defer close(doneChan)
+			defer innerWg.Done()
 			for {
 				select {
 				case rng := <-blockRanges:
@@ -101,25 +101,26 @@ func (s *Service) Migrate(wg *sync.WaitGroup, tableName TableName, blockRanges <
 						readGapChan <- rng
 						continue
 					}
-					if reflect.Indirect(reflect.ValueOf(oldModels)).Len() == 0 {
+					numReadRecords := reflect.Indirect(reflect.ValueOf(oldModels)).Len()
+					if numReadRecords == 0 {
 						if tableName == EthHeaders || tableName == EthState || tableName == EthAccounts {
 							// all other tables can, at least in theory, be empty within a range
 							// e.g. a block that has no txs or uncles will only
 							// have a header and an updated state account for the miner's reward
 							readGapChan <- rng
 						} else {
-							logrus.Infof("table %s worker %d finished range (%d, %d)", tableName, workerNum, rng[0], rng[1])
+							logrus.Infof("table %s worker %d finished range (%d, %d)- no read records found in range", tableName, workerNum, rng[0], rng[1])
 						}
 						continue
 					}
-					logrus.Debugf("table %s worker %d block range (%d, %d) read models (count %d):\r\n%+v", tableName, workerNum, rng[0], rng[1], reflect.Indirect(reflect.ValueOf(oldModels)).Len(), oldModels)
+					logrus.Debugf("table %s worker %d block range (%d, %d) read models count: %d", tableName, workerNum, rng[0], rng[1], numReadRecords)
 					newModels, gaps, err := transformer.Transform(oldModels, rng)
 					if err != nil {
 						errChan <- fmt.Errorf("table %s worker %d transform error (%v) in range (%d, %d)", tableName, workerNum, err, rng[0], rng[1])
 						writeGapChan <- rng
 						continue
 					}
-					logrus.Debugf("table %s worker %d block range (%d, %d) write models (count %d):\r\n%+v", tableName, workerNum, rng[0], rng[1], reflect.ValueOf(newModels).Len(), newModels)
+					logrus.Debugf("table %s worker %d block range (%d, %d) write models count: %d", tableName, workerNum, rng[0], rng[1], reflect.ValueOf(newModels).Len())
 					if err := s.writer.Write(writePgStr, newModels); err != nil {
 						errChan <- fmt.Errorf("table %s worker %d write error (%v) in range (%d, %d)", tableName, workerNum, err, rng[0], rng[1])
 						writeGapChan <- rng
@@ -128,7 +129,7 @@ func (s *Service) Migrate(wg *sync.WaitGroup, tableName TableName, blockRanges <
 					for _, gap := range gaps {
 						readGapChan <- gap
 					}
-					logrus.Infof("table %s worker %d finished range (%d, %d)", tableName, workerNum, rng[0], rng[1])
+					logrus.Infof("table %s worker %d finished range (%d, %d)- %d records processed", tableName, workerNum, rng[0], rng[1], numReadRecords)
 				case <-s.closeChan:
 					logrus.Infof("quitting migration worker %d for table %s", workerNum, tableName)
 					return
@@ -144,6 +145,13 @@ func (s *Service) Migrate(wg *sync.WaitGroup, tableName TableName, blockRanges <
 		}(workerNum, tableName)
 	}
 
+	wg.Add(1)
+	go func() {
+		innerWg.Wait()
+		wg.Done()
+		close(doneChan)
+	}()
+
 	return readGapChan, writeGapChan, doneChan, quitChan, errChan
 }
 
@@ -152,5 +160,8 @@ func (s *Service) Migrate(wg *sync.WaitGroup, tableName TableName, blockRanges <
 // whereas closing the chan returned by Migrate only closes the goroutines spun up by that method call
 func (s *Service) Close() error {
 	close(s.closeChan)
-	return nil
+	if err := s.reader.Close(); err != nil {
+		return err
+	}
+	return s.writer.Close()
 }

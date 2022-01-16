@@ -1,2 +1,7 @@
 .idea/
 migration-tools
+pkg/bulk_benchmark_data.tar
+benchmark_results.txt
+logfile.txt
+readGaps/
+writeGaps/

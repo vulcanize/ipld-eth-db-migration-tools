@@ -17,7 +17,7 @@
 package migration_tools_test
 
 import (
-	"os"
+	"io/ioutil"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -31,6 +31,5 @@ func TestETHSuite(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	logrus.SetLevel(logrus.DebugLevel)
-	logrus.SetOutput(os.Stdout)
+	logrus.SetOutput(ioutil.Discard)
 })

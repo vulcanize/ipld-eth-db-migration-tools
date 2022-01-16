@@ -334,7 +334,6 @@ func prepDatabase(db sql.Database) {
 	Expect(err).ToNot(HaveOccurred())
 }
 
-
 func tearDownDatabase(db sql.Database) {
 	tx, err := db.Begin(context.Background())
 	Expect(err).ToNot(HaveOccurred())

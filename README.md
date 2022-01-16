@@ -34,12 +34,14 @@ Example TOML config:
 [log]
     file = "path/to/log/file" # $LOGRUS_FILE
     level = "info" # $LOGRUS_LEVEL
+    readGapsDir = "path/to/read/gaps/dir" # $LOG_READ_GAPS_DIR
+    writeGapsDir = "path/to/write/gaps/dir" # $LOG_WRITE_GAPS_DIR
 
 [v2]
     databaseName = "vulcanize_public_v2" # $V2_DATABASE_NAME
     databaseHostName = "localhost" # $V2_DATABASE_HOSTNAME
     databasePort = "5432" # $V2_DATABASE_PORT
-    databaseUser = "postgtres" # $V2_DATABASE_USER
+    databaseUser = "postgres" # $V2_DATABASE_USER
     databasePassword = "" # $V2_DATABASE_PASSWORD
     databaseMaxIdleConns = 50 # $V2_DATABASE_MAX_IDLE_CONNECTIONS
     databaseMaxOpenConns = 100 # $V2_DATABASE_MAX_OPEN_CONNECTIONS
@@ -49,7 +51,7 @@ Example TOML config:
     databaseName = "vulcanize_public_v2" # $V3_DATABASE_NAME
     databaseHostName = "localhost" # $V3_DATABASE_HOSTNAME
     databasePort = "5432" # $V3_DATABASE_PORT
-    databaseUser = "postgtres" # $V3_DATABASE_USER
+    databaseUser = "postgres" # $V3_DATABASE_USER
     databasePassword = "" # $V3_DATABASE_PASSWORD
     databaseMaxIdleConns = 50 # $V3_DATABASE_MAX_IDLE_CONNECTIONS
     databaseMaxOpenConns = 100 # $V3_DATABASE_MAX_OPEN_CONNECTIONS

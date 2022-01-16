@@ -21,6 +21,9 @@ const (
 	LOGRUS_FILE  = "LOGRUS_FILE"
 	LOGRUS_LEVEL = "LOGRUS_LEVEL"
 
+	LOG_READ_GAPS_DIR  = "LOG_READ_GAPS_DIR"
+	LOG_WRITE_GAPS_DIR = "LOG_WRITE_GAPS_DIR"
+
 	MIGRATION_START                   = "MIGRATION_START"
 	MIGRATION_STOP                    = "MIGRATION_STOP"
 	MIGRATION_TABLE_NAMES             = "MIGRATION_TABLE_NAMES"
@@ -51,6 +54,9 @@ const (
 const (
 	TOML_LOGRUS_FILE  = "log.file"
 	TOML_LOGRUS_LEVEL = "log.level"
+
+	TOML_LOG_READ_GAPS_DIR  = "log.readGapsDir"
+	TOML_LOG_WRITE_GAPS_DIR = "log.writeGapsDir"
 
 	TOML_MIGRATION_RANGES                  = "migrator.ranges"
 	TOML_MIGRATION_START                   = "migrator.start"
@@ -83,6 +89,9 @@ const (
 const (
 	CLI_LOGRUS_FILE  = "log-file"
 	CLI_LOGRUS_LEVEL = "log-level"
+
+	CLI_LOG_READ_GAPS_DIR  = "read-gaps-dir"
+	CLI_LOG_WRITE_GAPS_DIR = "write-gaps-dir"
 
 	CLI_MIGRATION_START                   = "start-height"
 	CLI_MIGRATION_STOP                    = "stop-height"

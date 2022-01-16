@@ -45,3 +45,8 @@ func NewReader(db *sqlx.DB) *Reader {
 func (r *Reader) Read(blockRange [2]uint64, pgStr ReadPgStr, models interface{}) error {
 	return r.db.Select(models, string(pgStr), blockRange[0], blockRange[1])
 }
+
+// Close satisfies io.Closer
+func (r *Reader) Close() error {
+	return r.db.Close()
+}
