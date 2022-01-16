@@ -21,10 +21,15 @@ const (
 	LOGRUS_FILE  = "LOGRUS_FILE"
 	LOGRUS_LEVEL = "LOGRUS_LEVEL"
 
-	MIGRATION_START             = "MIGRATION_START"
-	MIGRATION_STOP              = "MIGRATION_STOP"
-	MIGRATION_TABLE_NAMES       = "MIGRATION_TABLE_NAMES"
-	MIGRATION_WORKERS_PER_TABLE = "MIGRATION_WORKERS_PER_TABLE"
+	LOG_READ_GAPS_DIR  = "LOG_READ_GAPS_DIR"
+	LOG_WRITE_GAPS_DIR = "LOG_WRITE_GAPS_DIR"
+
+	MIGRATION_START                   = "MIGRATION_START"
+	MIGRATION_STOP                    = "MIGRATION_STOP"
+	MIGRATION_TABLE_NAMES             = "MIGRATION_TABLE_NAMES"
+	MIGRATION_WORKERS_PER_TABLE       = "MIGRATION_WORKERS_PER_TABLE"
+	MIGRATION_AUTO_RANGE              = "MIGRATION_AUTO_RANGE"
+	MIGRATION_AUTO_RANGE_SEGMENT_SIZE = "MIGRATION_AUTO_RANGE_SEGMENT_SIZE"
 
 	V2_DATABASE_NAME                 = "V2_DATABASE_NAME"
 	V2_DATABASE_HOSTNAME             = "V2_DATABASE_HOSTNAME"
@@ -50,11 +55,16 @@ const (
 	TOML_LOGRUS_FILE  = "log.file"
 	TOML_LOGRUS_LEVEL = "log.level"
 
-	TOML_MIGRATION_RANGES            = "migrator.ranges"
-	TOML_MIGRATION_START             = "migrator.start"
-	TOML_MIGRATION_STOP              = "migrator.stop"
-	TOML_MIGRATION_TABLE_NAMES       = "migrator.tableNames"
-	TOML_MIGRATION_WORKERS_PER_TABLE = "migrator.workersPerTable"
+	TOML_LOG_READ_GAPS_DIR  = "log.readGapsDir"
+	TOML_LOG_WRITE_GAPS_DIR = "log.writeGapsDir"
+
+	TOML_MIGRATION_RANGES                  = "migrator.ranges"
+	TOML_MIGRATION_START                   = "migrator.start"
+	TOML_MIGRATION_STOP                    = "migrator.stop"
+	TOML_MIGRATION_TABLE_NAMES             = "migrator.tableNames"
+	TOML_MIGRATION_WORKERS_PER_TABLE       = "migrator.workersPerTable"
+	TOML_MIGRATION_AUTO_RANGE              = "migrator.autoRange"
+	TOML_MIGRATION_AUTO_RANGE_SEGMENT_SIZE = "migrator.segmentSize"
 
 	TOML_V2_DATABASE_NAME                 = "v2.databaseName"
 	TOML_V2_DATABASE_HOSTNAME             = "v2.databaseHostName"
@@ -80,10 +90,15 @@ const (
 	CLI_LOGRUS_FILE  = "log-file"
 	CLI_LOGRUS_LEVEL = "log-level"
 
-	CLI_MIGRATION_START             = "start-height"
-	CLI_MIGRATION_STOP              = "stop-height"
-	CLI_MIGRATION_TABLE_NAMES       = "table-names"
-	CLI_MIGRATION_WORKERS_PER_TABLE = "workers-per-table"
+	CLI_LOG_READ_GAPS_DIR  = "read-gaps-dir"
+	CLI_LOG_WRITE_GAPS_DIR = "write-gaps-dir"
+
+	CLI_MIGRATION_START                   = "start-height"
+	CLI_MIGRATION_STOP                    = "stop-height"
+	CLI_MIGRATION_TABLE_NAMES             = "table-names"
+	CLI_MIGRATION_WORKERS_PER_TABLE       = "workers-per-table"
+	CLI_MIGRATION_AUTO_RANGE              = "auto-range"
+	CLI_MIGRATION_AUTO_RANGE_SEGMENT_SIZE = "segment-size"
 
 	CLI_V2_DATABASE_NAME                 = "v2-db-name"
 	CLI_V2_DATABASE_HOSTNAME             = "v2-db-hostname"

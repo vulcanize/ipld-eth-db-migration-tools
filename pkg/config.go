@@ -17,36 +17,19 @@
 package migration_tools
 
 import (
-	"time"
-
+	"github.com/ethereum/go-ethereum/statediff/indexer/database/sql/postgres"
 	"github.com/spf13/viper"
 )
 
 // Config struct holds the configuration params for a Migrator
 type Config struct {
-	ReadDB          DBConfig
-	WriteDB         DBConfig
+	ReadDB          postgres.Config
+	WriteDB         postgres.Config
 	WorkersPerTable int
-}
-
-// DBConfig struct holds Postgres configuration params
-type DBConfig struct {
-	Username     string
-	Password     string
-	Hostname     string
-	DatabaseName string
-	Port         int
-
-	MaxConns        int
-	MaxIdle         int
-	MaxConnLifetime time.Duration
 }
 
 // NewConfig returns a new Config
 func NewConfig() *Config {
-	viper.BindEnv(TOML_MIGRATION_START, MIGRATION_START)
-	viper.BindEnv(TOML_MIGRATION_STOP, MIGRATION_STOP)
-	viper.BindEnv(TOML_MIGRATION_TABLE_NAMES, MIGRATION_TABLE_NAMES)
 	viper.BindEnv(TOML_MIGRATION_WORKERS_PER_TABLE, MIGRATION_WORKERS_PER_TABLE)
 
 	viper.BindEnv(TOML_V2_DATABASE_NAME, V2_DATABASE_NAME)
@@ -71,7 +54,7 @@ func NewConfig() *Config {
 
 	return &Config{
 		WorkersPerTable: viper.GetInt(TOML_MIGRATION_WORKERS_PER_TABLE),
-		ReadDB: DBConfig{
+		ReadDB: postgres.Config{
 			Username:        viper.GetString(TOML_V2_DATABASE_USER),
 			Password:        viper.GetString(TOML_V2_DATABASE_PASSWORD),
 			Hostname:        viper.GetString(TOML_V2_DATABASE_HOSTNAME),
@@ -81,7 +64,7 @@ func NewConfig() *Config {
 			MaxIdle:         viper.GetInt(TOML_V2_DATABASE_MAX_IDLE_CONNECTIONS),
 			MaxConnLifetime: viper.GetDuration(TOML_V2_DATABASE_MAX_CONN_LIFETIME),
 		},
-		WriteDB: DBConfig{
+		WriteDB: postgres.Config{
 			Username:        viper.GetString(TOML_V3_DATABASE_USER),
 			Password:        viper.GetString(TOML_V3_DATABASE_PASSWORD),
 			Hostname:        viper.GetString(TOML_V3_DATABASE_HOSTNAME),

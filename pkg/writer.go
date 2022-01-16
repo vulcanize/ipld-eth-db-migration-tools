@@ -32,6 +32,14 @@ func NewWriter(db *sqlx.DB) *Writer {
 
 // Write satisfies interfaces.Writer for public.nodes
 func (w *Writer) Write(pgStr WritePgStr, models interface{}) error {
-	_, err := w.db.NamedQuery(string(pgStr), models)
-	return err
+	rows, err := w.db.NamedQuery(string(pgStr), models)
+	if err != nil {
+		return err
+	}
+	return rows.Close()
+}
+
+// Close satisfies io.Closer
+func (w *Writer) Close() error {
+	return w.db.Close()
 }

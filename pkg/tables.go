@@ -39,17 +39,17 @@ import (
 type TableName string
 
 const (
-	PublicNodes           TableName = "public.nodes"
-	EthHeaders            TableName = "eth.header_cids"
-	EthUncles             TableName = "eth.uncle_cids"
-	EthTransactions       TableName = "eth.transaction_cids"
-	EthAccessListElements TableName = "eth.access_list_elements"
-	EthReceipts           TableName = "eth.receipt_cids"
-	EthLogs               TableName = "eth.log_cids"
-	EthLogsRepair         TableName = "eth.log_cids+public.blocks"
-	EthState              TableName = "eth.state_cids"
-	EthAccounts           TableName = "eth.state_accounts"
-	EthStorage            TableName = "eth.storage_cids"
+	PublicNodes           TableName = "nodes"
+	EthHeaders            TableName = "header_cids"
+	EthUncles             TableName = "uncle_cids"
+	EthTransactions       TableName = "transaction_cids"
+	EthAccessListElements TableName = "access_list_elements"
+	EthReceipts           TableName = "receipt_cids"
+	EthLogs               TableName = "log_cids"
+	EthLogsRepair         TableName = "log_cids_repair"
+	EthState              TableName = "state_cids"
+	EthAccounts           TableName = "state_accounts"
+	EthStorage            TableName = "storage_cids"
 	Unknown               TableName = "unknown"
 )
 
@@ -76,7 +76,7 @@ func NewTableNameFromString(tableNameStr string) (TableName, error) {
 		return EthAccounts, nil
 	case "eth.storage_cids", "storage_cids", "storage":
 		return EthStorage, nil
-	case "eth.log_cids.repair", "log_repair":
+	case "eth.log_cids.repair", "log_repair", "log_cids_repair":
 		return EthLogsRepair, nil
 	default:
 		return Unknown, fmt.Errorf("unrecognized table name: %s", tableNameStr)

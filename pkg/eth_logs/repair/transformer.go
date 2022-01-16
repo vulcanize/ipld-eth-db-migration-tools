@@ -69,6 +69,9 @@ func (t *Transformer) Transform(models interface{}, expectedRange [2]uint64) (in
 		if err != nil {
 			return nil, nil, err
 		}
+		if model.LeafMhKey != key {
+			return nil, [][2]uint64{expectedRange}, fmt.Errorf("log_cids record mh key (%s) does not match dervied mh key (%s)", model.LeafMhKey, key)
+		}
 		missingIPLDs[i] = public_blocks.IPLDModel{
 			Key:  key,
 			Data: data,

@@ -18,28 +18,22 @@ package migration_tools_test
 
 import (
 	"context"
-	"errors"
-	"os"
 	"sync"
 
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
-
-	"github.com/ethereum/go-ethereum/statediff/indexer/database/file"
+	"github.com/ethereum/go-ethereum/statediff/indexer/database/sql"
 	"github.com/ethereum/go-ethereum/statediff/indexer/database/sql/postgres"
 	"github.com/ethereum/go-ethereum/statediff/indexer/interfaces"
-	"github.com/jmoiron/sqlx"
-	. "github.com/onsi/ginkgo"
+	"github.com/ethereum/go-ethereum/statediff/indexer/node"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	migration_tools "github.com/vulcanize/migration-tools/pkg"
 )
 
-func writeV2SQLFiles() {
-	if _, err := os.Stat(file.TestConfig.FilePath); !errors.Is(err, os.ErrNotExist) {
-		err := os.Remove(file.TestConfig.FilePath)
-		Expect(err).ToNot(HaveOccurred())
-	}
-	ind, err = file.NewStateDiffIndexer(context.Background(), migration_tools.TestConfig, file.TestConfig)
+func writeV2SQL(sqlDB sql.Database) {
+	ind, err = sql.NewStateDiffIndexer(context.Background(), migration_tools.TestConfig, sqlDB)
 	Expect(err).ToNot(HaveOccurred())
 	var tx interfaces.Batch
 	tx, err = ind.PushBlock(
@@ -48,82 +42,50 @@ func writeV2SQLFiles() {
 		migration_tools.MockBlock.Difficulty())
 	Expect(err).ToNot(HaveOccurred())
 	defer func() {
-		err = tx.Submit(err)
-		Expect(err).ToNot(HaveOccurred())
-		err = ind.Close()
+		err := tx.Submit(err)
 		Expect(err).ToNot(HaveOccurred())
 	}()
-	for _, node := range migration_tools.StateDiffs {
-		err = ind.PushStateNode(tx, node, mockBlock.Hash().String())
+	for _, n := range migration_tools.StateDiffs {
+		err = ind.PushStateNode(tx, n, mockBlock.Hash().String())
 		Expect(err).ToNot(HaveOccurred())
 	}
-	Expect(tx.(*file.BatchTx).BlockNumber).To(Equal(migration_tools.BlockNumber.Uint64()))
-
-	connStr := v3DBIndexerConfig.DbConnectionString()
-
-	sqlxDB, err = sqlx.Connect("postgres", connStr)
-	Expect(err).ToNot(HaveOccurred())
-}
-
-func dumpV3Data() {
-	sqlFileBytes, err := os.ReadFile(file.TestConfig.FilePath)
-	Expect(err).ToNot(HaveOccurred())
-
-	_, err = sqlxDB.Exec(string(sqlFileBytes))
-	Expect(err).ToNot(HaveOccurred())
+	Expect(tx.(*sql.BatchTx).BlockNumber).To(Equal(migration_tools.BlockNumber.Uint64()))
 }
 
 func tearDown() {
-	tearDownDB(sqlxDB)
-	err := os.Remove(file.TestConfig.FilePath)
-	Expect(err).ToNot(HaveOccurred())
-	err = sqlxDB.Close()
+	tearDownDatabase(sqlDB)
+	err = sqlDB.Close()
 	Expect(err).ToNot(HaveOccurred())
 }
 
-var v2DBMigrationConfig = migration_tools.DBConfig{
-	Hostname:     "localhost",
-	Port:         5432,
-	DatabaseName: "vulcanize_testing_v2",
-	Username:     "postgres",
-	Password:     "",
-}
-
-var v3DBMigrationConfig = migration_tools.DBConfig{
-	Hostname:     "localhost",
-	Port:         5432,
-	DatabaseName: "vulcanize_testing_v3",
-	Username:     "postgres",
-	Password:     "",
-}
-
-var v3DBIndexerConfig = postgres.Config{
-	Hostname:     "localhost",
-	Port:         5432,
-	DatabaseName: "vulcanize_testing_v3",
-	Username:     "postgres",
-	Password:     "",
-}
-
-var _ = Describe("Migration Service", func() {
-	Describe("LogTrie repair", func() {
+var _ = Describe("Migration Service", Serial, func() {
+	Describe("LogTrie repair", Serial, func() {
 		BeforeEach(func() {
-			writeV2SQLFiles()
-			dumpV3Data()
+			driver, err := postgres.NewSQLXDriver(context.Background(), v3DBConfig, node.Info{})
+			Expect(err).ToNot(HaveOccurred())
+			sqlDB, err = postgres.NewPostgresDB(driver), nil
+			Expect(err).ToNot(HaveOccurred())
+			prepDatabase(sqlDB)
+			writeV2SQL(sqlDB)
+			_, err = sqlDB.Exec(context.Background(), "ALTER TABLE eth.log_cids DROP CONSTRAINT IF EXISTS log_cids_leaf_mh_key_fkey")
+			Expect(err).ToNot(HaveOccurred())
 			conf := &migration_tools.Config{
-				ReadDB:          v3DBMigrationConfig,
-				WriteDB:         v3DBMigrationConfig,
-				WorkersPerTable: 0,
+				ReadDB:          v3DBConfig,
+				WriteDB:         v3DBConfig,
+				WorkersPerTable: 1,
 			}
 			migrator, err = migration_tools.NewMigrator(context.Background(), conf)
 			Expect(err).To(BeNil())
 		})
 		AfterEach(func() {
+			_, err := sqlDB.Exec(context.Background(), "ALTER TABLE eth.log_cids ADD CONSTRAINT log_cids_leaf_mh_key_fkey "+
+				"FOREIGN KEY (leaf_mh_key) REFERENCES public.blocks (key) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED")
+			Expect(err).ToNot(HaveOccurred())
 			tearDown()
 			migrator.Close()
 		})
 
-		It("throws no errors on empty range", func() {
+		It("throws no errors on empty range", Serial, Label("test"), func() {
 			wg := new(sync.WaitGroup)
 			blockRangeChan := make(chan [2]uint64)
 			readGaps, writeGaps, doneChan, quitChan, errChan := migrator.Migrate(wg, migration_tools.EthLogsRepair, blockRangeChan)
@@ -155,7 +117,7 @@ var _ = Describe("Migration Service", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("throws no errors on empty range", func() {
+		It("throws no errors on empty range", Serial, Label("test"), func() {
 			wg := new(sync.WaitGroup)
 			blockRangeChan := make(chan [2]uint64)
 			readGaps, writeGaps, doneChan, quitChan, errChan := migrator.Migrate(wg, migration_tools.EthLogsRepair, blockRangeChan)
@@ -187,7 +149,7 @@ var _ = Describe("Migration Service", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("repairs missing log IPLDs", func() {
+		It("repairs missing log IPLDs", Serial, Label("test"), func() {
 			// explicitly check the IPLDs are correct
 			type logIPLD struct {
 				Index   int    `db:"index"`
@@ -206,16 +168,15 @@ var _ = Describe("Migration Service", func() {
 					INNER JOIN public.blocks ON (log_cids.leaf_mh_key = blocks.key)
 					WHERE receipt_cids.leaf_cid = $1 ORDER BY eth.log_cids.index ASC`
 			rcts := make([]string, 0)
-			err = sqlxDB.Select(&rcts, rctPgStr, migration_tools.BlockNumber.Uint64())
+			err = sqlDB.Select(context.Background(), &rcts, rctPgStr, migration_tools.BlockNumber.Uint64())
 			Expect(err).To(BeNil())
 			Expect(len(rcts)).To(Equal(5))
 
 			for i := range rcts {
 				results := make([]logIPLD, 0)
-				err = sqlxDB.Select(&results, logPgStr, rcts[i])
+				err = sqlDB.Select(context.Background(), &results, logPgStr, rcts[i])
 				Expect(err).To(BeNil())
 
-				// expecting MockLog1 and MockLog2 for mockReceipt4
 				expectedLogs := migration_tools.MockReceipts[i].Logs
 				Expect(len(results)).To(Equal(len(expectedLogs)))
 
@@ -225,10 +186,14 @@ var _ = Describe("Migration Service", func() {
 					err = rlp.DecodeBytes(r.Data, &nodeElements)
 					Expect(err).To(BeNil())
 					if len(nodeElements) == 2 {
+						log := new(types.Log)
+						rlp.DecodeBytes(nodeElements[1].([]byte), log)
 						logRaw, err := rlp.EncodeToBytes(expectedLogs[idx])
 						Expect(err).To(BeNil())
 						Expect(logRaw).To(Equal(nodeElements[1].([]byte)))
 					} else {
+						log := new(types.Log)
+						rlp.DecodeBytes(r.Data, log)
 						logRaw, err := rlp.EncodeToBytes(expectedLogs[idx])
 						Expect(err).To(BeNil())
 						Expect(logRaw).To(Equal(r.Data))
@@ -236,24 +201,25 @@ var _ = Describe("Migration Service", func() {
 				}
 			}
 
-			// remove the log IPLDs
-			_, err = sqlxDB.Exec(`DELETE FROM blocks WHERE key = $1`, migration_tools.ShotLogMhKey)
+			// remove the short log IPLDs
+			_, err = sqlDB.Exec(context.Background(), `DELETE FROM blocks WHERE key = $1`, migration_tools.ShotLog1MhKey)
+			Expect(err).To(BeNil())
+			_, err = sqlDB.Exec(context.Background(), `DELETE FROM blocks WHERE key = $1`, migration_tools.ShotLog2MhKey)
 			Expect(err).To(BeNil())
 
 			// explicitly check the IPLDs are gone
 			rcts2 := make([]string, 0)
-			err = sqlxDB.Select(&rcts2, rctPgStr, migration_tools.BlockNumber.Uint64())
+			err = sqlDB.Select(context.Background(), &rcts2, rctPgStr, migration_tools.BlockNumber.Uint64())
 			Expect(err).To(BeNil())
 			Expect(len(rcts2)).To(Equal(5))
 
 			for i := range rcts2 {
 				results := make([]logIPLD, 0)
-				err = sqlxDB.Select(&results, logPgStr, rcts2[i])
+				err = sqlDB.Select(context.Background(), &results, logPgStr, rcts2[i])
 				Expect(err).To(BeNil())
 
-				// expecting MockLog1 and MockLog2 for mockReceipt4
 				expectedLogs := migration_tools.MockReceipts[i].Logs
-				if i == 3 {
+				if i == 3 || i == 1 {
 					Expect(len(results)).To(Equal(len(expectedLogs) - 1))
 				} else {
 					Expect(len(results)).To(Equal(len(expectedLogs)))
@@ -309,16 +275,14 @@ var _ = Describe("Migration Service", func() {
 
 			// explicitly check the IPLDs are back
 			rcts3 := make([]string, 0)
-			err = sqlxDB.Select(&rcts3, rctPgStr, migration_tools.BlockNumber.Uint64())
+			err = sqlDB.Select(context.Background(), &rcts3, rctPgStr, migration_tools.BlockNumber.Uint64())
 			Expect(err).To(BeNil())
 			Expect(len(rcts3)).To(Equal(5))
 
 			for i := range rcts {
 				results := make([]logIPLD, 0)
-				err = sqlxDB.Select(&results, logPgStr, rcts[i])
+				err = sqlDB.Select(context.Background(), &results, logPgStr, rcts[i])
 				Expect(err).To(BeNil())
-
-				// expecting MockLog1 and MockLog2 for mockReceipt4
 				expectedLogs := migration_tools.MockReceipts[i].Logs
 				Expect(len(results)).To(Equal(len(expectedLogs)))
 
@@ -342,32 +306,60 @@ var _ = Describe("Migration Service", func() {
 	})
 })
 
-func tearDownDB(db *sqlx.DB) {
-	tx, err := db.Begin()
+func prepDatabase(db sql.Database) {
+	tx, err := db.Begin(context.Background())
 	Expect(err).ToNot(HaveOccurred())
 
-	_, err = tx.Exec(`DELETE FROM eth.header_cids`)
+	_, err = tx.Exec(context.Background(), `DELETE FROM eth.header_cids`)
 	Expect(err).ToNot(HaveOccurred())
-	_, err = tx.Exec(`DELETE FROM eth.uncle_cids`)
+	_, err = tx.Exec(context.Background(), `DELETE FROM eth.uncle_cids`)
 	Expect(err).ToNot(HaveOccurred())
-	_, err = tx.Exec(`DELETE FROM eth.transaction_cids`)
+	_, err = tx.Exec(context.Background(), `DELETE FROM eth.transaction_cids`)
 	Expect(err).ToNot(HaveOccurred())
-	_, err = tx.Exec(`DELETE FROM eth.receipt_cids`)
+	_, err = tx.Exec(context.Background(), `DELETE FROM eth.receipt_cids`)
 	Expect(err).ToNot(HaveOccurred())
-	_, err = tx.Exec(`DELETE FROM eth.state_cids`)
+	_, err = tx.Exec(context.Background(), `DELETE FROM eth.state_cids`)
 	Expect(err).ToNot(HaveOccurred())
-	_, err = tx.Exec(`DELETE FROM eth.storage_cids`)
+	_, err = tx.Exec(context.Background(), `DELETE FROM eth.storage_cids`)
 	Expect(err).ToNot(HaveOccurred())
-	_, err = tx.Exec(`DELETE FROM eth.state_accounts`)
+	_, err = tx.Exec(context.Background(), `DELETE FROM eth.state_accounts`)
 	Expect(err).ToNot(HaveOccurred())
-	_, err = tx.Exec(`DELETE FROM eth.access_list_elements`)
+	_, err = tx.Exec(context.Background(), `DELETE FROM eth.access_list_elements`)
 	Expect(err).ToNot(HaveOccurred())
-	_, err = tx.Exec(`DELETE FROM eth.log_cids`)
+	_, err = tx.Exec(context.Background(), `DELETE FROM eth.log_cids`)
 	Expect(err).ToNot(HaveOccurred())
-	_, err = tx.Exec(`DELETE FROM blocks`)
+	_, err = tx.Exec(context.Background(), `DELETE FROM blocks`)
 	Expect(err).ToNot(HaveOccurred())
-	_, err = tx.Exec(`DELETE FROM nodes`)
+	err = tx.Commit(context.Background())
 	Expect(err).ToNot(HaveOccurred())
-	err = tx.Commit()
+}
+
+func tearDownDatabase(db sql.Database) {
+	tx, err := db.Begin(context.Background())
+	Expect(err).ToNot(HaveOccurred())
+
+	_, err = tx.Exec(context.Background(), `DELETE FROM eth.header_cids`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(context.Background(), `DELETE FROM eth.uncle_cids`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(context.Background(), `DELETE FROM eth.transaction_cids`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(context.Background(), `DELETE FROM eth.receipt_cids`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(context.Background(), `DELETE FROM eth.state_cids`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(context.Background(), `DELETE FROM eth.storage_cids`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(context.Background(), `DELETE FROM eth.state_accounts`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(context.Background(), `DELETE FROM eth.access_list_elements`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(context.Background(), `DELETE FROM eth.log_cids`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(context.Background(), `DELETE FROM blocks`)
+	Expect(err).ToNot(HaveOccurred())
+	_, err = tx.Exec(context.Background(), `DELETE FROM nodes`)
+	Expect(err).ToNot(HaveOccurred())
+	err = tx.Commit(context.Background())
 	Expect(err).ToNot(HaveOccurred())
 }
