@@ -40,10 +40,10 @@ type StorageModelV2 struct {
 type StorageModelV3 struct {
 	HeaderID   string `db:"header_id"`
 	StatePath  []byte `db:"state_path"`
-	Path       []byte `db:"storage_path"`
 	StorageKey string `db:"storage_leaf_key"`
-	NodeType   int    `db:"node_type"`
 	CID        string `db:"cid"`
-	MhKey      string `db:"mh_key"`
+	Path       []byte `db:"storage_path"`
+	NodeType   int    `db:"node_type"`
 	Diff       bool   `db:"diff"`
+	MhKey      string `db:"mh_key"`
 }

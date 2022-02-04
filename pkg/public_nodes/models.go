@@ -18,9 +18,9 @@ package public_nodes
 
 // NodeModel is the v2 and v3 model for public.nodes
 type NodeModel struct {
-	ClientName   string `db:"client_name"`
 	GenesisBlock string `db:"genesis_block"`
 	NetworkID    string `db:"network_id"`
 	NodeID       string `db:"node_id"`
+	ClientName   string `db:"client_name"`
 	ChainID      int    `db:"chain_id"`
 }
