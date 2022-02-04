@@ -26,6 +26,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/vulcanize/migration-tools/pkg/sql"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -43,12 +45,12 @@ import (
 	"github.com/vulcanize/migration-tools/pkg/public_blocks"
 )
 
-type benchMarkCondition struct {
+type benchMarkRepairCondition struct {
 	NumOfWorkers int
 	SegmentSize  uint64
 }
 
-var benchMarkConditions = []benchMarkCondition{
+var benchMarkConditions = []benchMarkRepairCondition{
 	{
 		NumOfWorkers: 1,
 		SegmentSize:  100,
@@ -245,7 +247,7 @@ func setupBenchmarkDBFromGeneratedData() {
 	connStr := v3BenchmarkDBConfig.DbConnectionString()
 	sqlxDB, err = sqlx.Connect("postgres", connStr)
 	Expect(err).ToNot(HaveOccurred())
-	writer := migration_tools.NewWriter(sqlxDB)
+	writer := sql.NewWriter(sqlxDB)
 
 	_, err := sqlxDB.Exec("ALTER TABLE eth.log_cids DROP CONSTRAINT IF EXISTS log_cids_leaf_mh_key_fkey")
 	Expect(err).ToNot(HaveOccurred())
@@ -284,19 +286,19 @@ func setupBenchmarkDBFromGeneratedData() {
 			iplds = append(iplds, logIPLDs...)
 		}
 
-		err = writer.Write(migration_tools.PgWriteIPLDsStr, iplds)
+		err = writer.Write(sql.PgWriteIPLDsStr, iplds)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = writer.Write(migration_tools.PgWriteEthHeadersStr, headers)
+		err = writer.Write(sql.PgWriteEthHeadersStr, headers)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = writer.Write(migration_tools.PgWriteEthTransactionsStr, transactions)
+		err = writer.Write(sql.PgWriteEthTransactionsStr, transactions)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = writer.Write(migration_tools.PgWriteEthReceiptsStr, receipts)
+		err = writer.Write(sql.PgWriteEthReceiptsStr, receipts)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = writer.Write(migration_tools.PgWriteEthLogsStr, logs)
+		err = writer.Write(sql.PgWriteEthLogsStr, logs)
 		Expect(err).ToNot(HaveOccurred())
 	}
 }
