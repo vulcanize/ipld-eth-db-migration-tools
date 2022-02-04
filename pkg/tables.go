@@ -20,6 +20,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/vulcanize/migration-tools/pkg/csv"
+	"github.com/vulcanize/migration-tools/pkg/sql"
+
 	"github.com/vulcanize/migration-tools/pkg/eth_logs/repair"
 
 	"github.com/vulcanize/migration-tools/pkg/eth_access_lists"
@@ -139,30 +142,44 @@ var tableTransformerConstructorMappings = map[TableName]interfaces.TransformerCo
 	EthStorage:            eth_storage.NewTransformer,
 }
 
-var tableReaderStrMappings = map[TableName]ReadPgStr{
-	PublicNodes:           PgReadNodesStr,
-	EthHeaders:            PgReadEthHeadersStr,
-	EthUncles:             PgReadEthUnclesStr,
-	EthTransactions:       PgReadEthTransactionsStr,
-	EthAccessListElements: PgReadAccessListElementsStr,
-	EthReceipts:           PgReadEthReceiptsStr,
-	EthLogs:               PgReadEthLogsStr,
-	EthLogsRepair:         PgReadBrokenLogsStr,
-	EthState:              PgReadEthStateStr,
-	EthAccounts:           PgReadEthAccountsStr,
-	EthStorage:            PgReadEthStorageStr,
+var tableReaderStrMappings = map[TableName]sql.ReadPgStr{
+	PublicNodes:           sql.PgReadNodesStr,
+	EthHeaders:            sql.PgReadEthHeadersStr,
+	EthUncles:             sql.PgReadEthUnclesStr,
+	EthTransactions:       sql.PgReadEthTransactionsStr,
+	EthAccessListElements: sql.PgReadAccessListElementsStr,
+	EthReceipts:           sql.PgReadEthReceiptsStr,
+	EthLogs:               sql.PgReadEthLogsStr,
+	EthLogsRepair:         sql.PgReadBrokenLogsStr,
+	EthState:              sql.PgReadEthStateStr,
+	EthAccounts:           sql.PgReadEthAccountsStr,
+	EthStorage:            sql.PgReadEthStorageStr,
 }
 
-var tableWriterStrMappings = map[TableName]WritePgStr{
-	PublicNodes:           PgWriteNodesStr,
-	EthHeaders:            PgWriteEthHeadersStr,
-	EthUncles:             PgWriteEthUnclesStr,
-	EthTransactions:       PgWriteEthTransactionsStr,
-	EthAccessListElements: PgWriteAccessListElementsStr,
-	EthReceipts:           PgWriteEthReceiptsStr,
-	EthLogs:               PgWriteEthLogsStr,
-	EthLogsRepair:         PgWriteIPLDsStr,
-	EthState:              PgWriteEthStateStr,
-	EthAccounts:           PgWriteEthAccountsStr,
-	EthStorage:            PgWriteEthStorageStr,
+var tableWriterStrMappings = map[TableName]sql.WritePgStr{
+	PublicNodes:           sql.PgWriteNodesStr,
+	EthHeaders:            sql.PgWriteEthHeadersStr,
+	EthUncles:             sql.PgWriteEthUnclesStr,
+	EthTransactions:       sql.PgWriteEthTransactionsStr,
+	EthAccessListElements: sql.PgWriteAccessListElementsStr,
+	EthReceipts:           sql.PgWriteEthReceiptsStr,
+	EthLogs:               sql.PgWriteEthLogsStr,
+	EthLogsRepair:         sql.PgWriteIPLDsStr,
+	EthState:              sql.PgWriteEthStateStr,
+	EthAccounts:           sql.PgWriteEthAccountsStr,
+	EthStorage:            sql.PgWriteEthStorageStr,
+}
+
+var csvWriterStrMappings = map[TableName]csv.WriteCSVStr{
+	PublicNodes:           csv.CSVWriteNodesStr,
+	EthHeaders:            csv.CSVWriteEthHeadersStr,
+	EthUncles:             csv.CSVWriteEthUnclesStr,
+	EthTransactions:       csv.CSVWriteEthTransactionsStr,
+	EthAccessListElements: csv.CSVWriteAccessListElementsStr,
+	EthReceipts:           csv.CSVWriteEthReceiptsStr,
+	EthLogs:               csv.CSVWriteEthLogsStr,
+	EthLogsRepair:         csv.CSVWriteIPLDsStr,
+	EthState:              csv.CSVWriteEthStateStr,
+	EthAccounts:           csv.CSVWriteEthAccountsStr,
+	EthStorage:            csv.CSVWriteEthStorageStr,
 }

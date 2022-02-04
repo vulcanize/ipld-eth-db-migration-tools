@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package migration_tools
+package sql
 
 import (
 	"github.com/jmoiron/sqlx"
@@ -30,7 +30,7 @@ func NewWriter(db *sqlx.DB) *Writer {
 	return &Writer{db: db}
 }
 
-// Write satisfies interfaces.Writer for public.nodes
+// Write satisfies interfaces.Writer for v3 database
 func (w *Writer) Write(pgStr WritePgStr, models interface{}) error {
 	rows, err := w.db.NamedQuery(string(pgStr), models)
 	if err != nil {
