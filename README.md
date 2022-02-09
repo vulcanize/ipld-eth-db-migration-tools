@@ -38,24 +38,24 @@ Example TOML config:
     writeGapsDir = "path/to/write/gaps/dir" # $LOG_WRITE_GAPS_DIR
 
 [v2]
-    databaseName = "vulcanize_public_v2" # $V2_DATABASE_NAME
-    databaseHostName = "localhost" # $V2_DATABASE_HOSTNAME
-    databasePort = "5432" # $V2_DATABASE_PORT
-    databaseUser = "postgres" # $V2_DATABASE_USER
-    databasePassword = "" # $V2_DATABASE_PASSWORD
-    databaseMaxIdleConns = 50 # $V2_DATABASE_MAX_IDLE_CONNECTIONS
-    databaseMaxOpenConns = 100 # $V2_DATABASE_MAX_OPEN_CONNECTIONS
-    databaseMaxConnLifetime = 0 # $V2_DATABASE_MAX_CONN_LIFETIME
+    databaseName = "vulcanize_public_v2" # $OLD_DATABASE_NAME
+    databaseHostName = "localhost" # $OLD_DATABASE_HOSTNAME
+    databasePort = "5432" # $OLD_DATABASE_PORT
+    databaseUser = "postgres" # $OLD_DATABASE_USER
+    databasePassword = "" # $OLD_DATABASE_PASSWORD
+    databaseMaxIdleConns = 50 # $OLD_DATABASE_MAX_IDLE_CONNECTIONS
+    databaseMaxOpenConns = 100 # $OLD_DATABASE_MAX_OPEN_CONNECTIONS
+    databaseMaxConnLifetime = 0 # $OLD_DATABASE_MAX_CONN_LIFETIME
 
 [v3]
-    databaseName = "vulcanize_public_v2" # $V3_DATABASE_NAME
-    databaseHostName = "localhost" # $V3_DATABASE_HOSTNAME
-    databasePort = "5432" # $V3_DATABASE_PORT
-    databaseUser = "postgres" # $V3_DATABASE_USER
-    databasePassword = "" # $V3_DATABASE_PASSWORD
-    databaseMaxIdleConns = 50 # $V3_DATABASE_MAX_IDLE_CONNECTIONS
-    databaseMaxOpenConns = 100 # $V3_DATABASE_MAX_OPEN_CONNECTIONS
-    databaseMaxConnLifetime = 0 # $V3_DATABASE_MAX_CONN_LIFETIME
+    databaseName = "vulcanize_public_v2" # $NEW_DATABASE_NAME
+    databaseHostName = "localhost" # $NEW_DATABASE_HOSTNAME
+    databasePort = "5432" # $NEW_DATABASE_PORT
+    databaseUser = "postgres" # $NEW_DATABASE_USER
+    databasePassword = "" # $NEW_DATABASE_PASSWORD
+    databaseMaxIdleConns = 50 # $NEW_DATABASE_MAX_IDLE_CONNECTIONS
+    databaseMaxOpenConns = 100 # $NEW_DATABASE_MAX_OPEN_CONNECTIONS
+    databaseMaxConnLifetime = 0 # $NEW_DATABASE_MAX_CONN_LIFETIME
 ```
 
 The command can be configured through the linked TOML file as shown above, through ENV variable bindings, or through CLI flags.

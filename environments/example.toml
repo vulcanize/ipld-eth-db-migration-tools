@@ -15,22 +15,22 @@
     readGapsDir = "./readGaps/" # $LOG_READ_GAPS_DIR
     writeGapsDir = "./writeGaps/" # $LOG_WRITE_GAPS_DIR
 
-[v2]
-    databaseName = "vulcanize_test_repair" # $V2_DATABASE_NAME
-    databaseHostName = "localhost" # $V2_DATABASE_HOSTNAME
-    databasePort = "5432" # $V2_DATABASE_PORT
-    databaseUser = "postgres" # $V2_DATABASE_USER
-    databasePassword = "" # $V2_DATABASE_PASSWORD
-    databaseMaxIdleConns = 0 # $V2_DATABASE_MAX_IDLE_CONNECTIONS
-    databaseMaxOpenConns = 0 # $V2_DATABASE_MAX_OPEN_CONNECTIONS
-    databaseMaxConnLifetime = 0 # $V2_DATABASE_MAX_CONN_LIFETIME
+[old]
+    databaseName = "vulcanize_test_repair" # $OLD_DATABASE_NAME
+    databaseHostName = "localhost" # $OLD_DATABASE_HOSTNAME
+    databasePort = "5432" # $OLD_DATABASE_PORT
+    databaseUser = "postgres" # $OLD_DATABASE_USER
+    databasePassword = "" # $OLD_DATABASE_PASSWORD
+    databaseMaxIdleConns = 0 # $OLD_DATABASE_MAX_IDLE_CONNECTIONS
+    databaseMaxOpenConns = 0 # $OLD_DATABASE_MAX_OPEN_CONNECTIONS
+    databaseMaxConnLifetime = 0 # $OLD_DATABASE_MAX_CONN_LIFETIME
 
-[v3]
-    databaseName = "vulcanize_test_repair" # $V3_DATABASE_NAME
-    databaseHostName = "localhost" # $V3_DATABASE_HOSTNAME
-    databasePort = "5432" # $V3_DATABASE_PORT
-    databaseUser = "postgres" # $V3_DATABASE_USER
-    databasePassword = "" # $V3_DATABASE_PASSWORD
-    databaseMaxIdleConns = 0 # $V3_DATABASE_MAX_IDLE_CONNECTIONS
-    databaseMaxOpenConns = 0 # $V3_DATABASE_MAX_OPEN_CONNECTIONS
-    databaseMaxConnLifetime = 0 # $V3_DATABASE_MAX_CONN_LIFETIME
+[new]
+    databaseName = "vulcanize_test_repair" # $NEW_DATABASE_NAME
+    databaseHostName = "localhost" # $NEW_DATABASE_HOSTNAME
+    databasePort = "5432" # $NEW_DATABASE_PORT
+    databaseUser = "postgres" # $NEW_DATABASE_USER
+    databasePassword = "" # $NEW_DATABASE_PASSWORD
+    databaseMaxIdleConns = 0 # $NEW_DATABASE_MAX_IDLE_CONNECTIONS
+    databaseMaxOpenConns = 0 # $NEW_DATABASE_MAX_OPEN_CONNECTIONS
+    databaseMaxConnLifetime = 0 # $NEW_DATABASE_MAX_CONN_LIFETIME
