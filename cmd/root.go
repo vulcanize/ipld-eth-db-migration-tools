@@ -40,7 +40,7 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() {
-	log.Info("----- Starting migrator -----")
+	log.Info("----- Starting migration-tools -----")
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
@@ -106,7 +106,7 @@ func init() {
 	rootCmd.PersistentFlags().Duration(migration_tools.CLI_OLD_DATABASE_MAX_CONN_LIFETIME, 0, "max connection lifetime for the old database")
 
 	// new db flags
-	rootCmd.PersistentFlags().String(migration_tools.CLI_NEW_DATABASE_NAME, "vulcanize_v3", "name for the new database")
+	rootCmd.PersistentFlags().String(migration_tools.CLI_NEW_DATABASE_NAME, "vulcanize_new", "name for the new database")
 	rootCmd.PersistentFlags().String(migration_tools.CLI_NEW_DATABASE_HOSTNAME, "localhost", "hostname for the new database")
 	rootCmd.PersistentFlags().String(migration_tools.CLI_NEW_DATABASE_PORT, "5432", "port for the new database")
 	rootCmd.PersistentFlags().String(migration_tools.CLI_NEW_DATABASE_USER, "postgres", "username to use with the new database")

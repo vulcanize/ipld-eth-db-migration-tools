@@ -53,6 +53,7 @@ While processing headers, state, or state accounts it checks for gaps in the dat
 }
 
 func migrate() {
+	logWithCommand.Info("----- running migration -----")
 	conf := migration_tools.NewConfig()
 	logWithCommand.Infof("initializing a new Migrator with config params: %+v", conf)
 	migrator, err := migration_tools.NewMigrator(context.Background(), conf)

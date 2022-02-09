@@ -26,13 +26,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/vulcanize/migration-tools/pkg/public_blocks"
-
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	migration_tools "github.com/vulcanize/migration-tools/pkg"
+	"github.com/vulcanize/migration-tools/pkg/public_blocks"
 )
 
 // transferCmd represents the transfer command
@@ -52,6 +51,7 @@ Enables batching and proper logging of errors and progress during the process.`,
 }
 
 func transfer() {
+	logWithCommand.Info("----- running transfer -----")
 	conf := migration_tools.NewConfig()
 	logWithCommand.Infof("initializing a new Transferor with config params: %+v", conf)
 	transferor, err := migration_tools.NewMigrator(context.Background(), conf)

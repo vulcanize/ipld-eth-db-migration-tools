@@ -267,7 +267,7 @@ func (s *Service) Transfer(wg *sync.WaitGroup, fdwTableName string, segmentSize 
 		fdwTableName = public_blocks.DefaultV2FDWTableName
 	}
 
-	maxPage, err := public_blocks.GetMaxPage(db)
+	maxPage, err := public_blocks.GetMaxPage(db, fdwTableName)
 	if err != nil {
 		return nil, nil, nil, err
 	}

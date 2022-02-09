@@ -28,16 +28,16 @@ import (
 const DefaultV2FDWTableName = "v2db_public_blocks"
 
 const (
-	getMaxPagePgStr   = `SELECT MAX(ctid)::TEXT FROM public.blocks`
+	getMaxPagePgStr   = `SELECT MAX(ctid)::TEXT FROM %s`
 	transferPagePgStr = "INSERT INTO public.blocks(key, data)" +
-		"SELECT key, data FROM $1 WHERE ctid = ANY (ARRAY(SELECT ('($2,' || s.i || ')')::tid " +
+		"SELECT key, data FROM %s WHERE ctid = ANY (ARRAY(SELECT ('(%d,' || s.i || ')')::tid " +
 		"FROM generate_series(0, current_setting('block_size')::int/4) AS s(i)))" +
 		"ON CONFLICT (key) DO NOTHING"
 )
 
-func GetMaxPage(db *sqlx.DB) (uint64, error) {
+func GetMaxPage(db *sqlx.DB, fdwTableName string) (uint64, error) {
 	var ctidTuple string
-	if err := db.Get(ctidTuple, getMaxPagePgStr); err != nil {
+	if err := db.Get(&ctidTuple, fmt.Sprintf(getMaxPagePgStr, fdwTableName)); err != nil {
 		return 0, err
 	}
 	tupleSplit := strings.Split(ctidTuple, ",")
@@ -54,9 +54,9 @@ func GetPageSegments(maxPage, segmentSize uint64) [][2]uint64 {
 	if remainder != 0 {
 		numSegments = numSegments + 1
 	}
-	segments := make([][2]uint64, numSegments)
+	segments := make([][2]uint64, numSegments+1)
 	currentPage := uint64(0)
-	for i := uint64(0); i <= numSegments; i++ {
+	for i := uint64(0); i < numSegments; i++ {
 		segments[i] = [2]uint64{currentPage, currentPage + segmentSize - 1}
 		currentPage = currentPage + segmentSize
 	}
@@ -77,7 +77,7 @@ func TransferPages(db *sqlx.DB, fdwTableName string, firstPage, lastPage uint64)
 		}
 	}()
 	for i := firstPage; i <= lastPage; i++ {
-		_, err = tx.Exec(transferPagePgStr, fdwTableName, i)
+		_, err = tx.Exec(fmt.Sprintf(transferPagePgStr, fdwTableName, i))
 		if err != nil {
 			return err
 		}
