@@ -101,11 +101,12 @@ func transferTable(wg *sync.WaitGroup, transferor migration_tools.Migrator, tabl
 		logWithCommand.Fatalf("unable to open transfer gap file at %s", transferGapFilePath)
 	}
 
-	gapChan, errChan, doneChan, err := transferor.Transfer(wg, tableName, segmentSize)
+	gapChan, doneChan, errChan, err := transferor.Transfer(wg, tableName, segmentSize)
 	if err != nil {
 		logWithCommand.Fatalf("transfer initialization failed: %v", err)
 	}
 
+	// handle writing out gaps
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -117,6 +118,18 @@ func transferTable(wg *sync.WaitGroup, transferor migration_tools.Migrator, tabl
 				if _, err := transferGapFile.WriteString(fmt.Sprintf("%d, %d\r\n", readGap[0], readGap[1])); err != nil {
 					logWithCommand.Errorf("error writing read gap to file at %s; err: %s", transferGapFilePath, err.Error())
 				}
+			case <-doneChan:
+				return
+			}
+		}
+	}()
+
+	// handle writing out errors
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
 			case err := <-errChan:
 				logWithCommand.Errorf("Migrator %s table transfer error: %v", tableName, err)
 			case <-doneChan:

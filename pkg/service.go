@@ -288,7 +288,7 @@ func (s *Service) Transfer(wg *sync.WaitGroup, fdwTableName string, segmentSize 
 				return
 			default:
 			}
-			logrus.Infof("transfer %s page range (%d, %d) from old DV to new DB", fdwTableName, segment[0], segment[1])
+			logrus.Infof("transfer %s page range (%d, %d) from old DB to new DB", fdwTableName, segment[0], segment[1])
 			if err := public_blocks.TransferPages(db, fdwTableName, segment[0], segment[1]); err != nil {
 				errChan <- fmt.Errorf("failed to transfer %s page range (%d, %d): %v", fdwTableName, segment[0], segment[1], err)
 				transferFailChan <- segment

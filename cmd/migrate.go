@@ -76,9 +76,11 @@ func migrate() {
 	}
 
 	wg := new(sync.WaitGroup)
-	for _, table := range tables {
-		migrateTable(wg, migrator, table, ranges)
-	}
+	go func() {
+		for _, table := range tables {
+			migrateTable(wg, migrator, table, ranges)
+		}
+	}()
 
 	go func() {
 		shutdown := make(chan os.Signal, 1)
@@ -152,6 +154,7 @@ func migrateTable(wg *sync.WaitGroup, migrator migration_tools.Migrator,
 		close(quitChan)
 	}()
 
+	// handle writing out gaps
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -169,6 +172,18 @@ func migrateTable(wg *sync.WaitGroup, migrator migration_tools.Migrator,
 				if _, err := writeGapFile.WriteString(fmt.Sprintf("%d, %d\r\n", writeGap[0], writeGap[1])); err != nil {
 					logWithCommand.Errorf("error writing write gap to file at %s; err: %s", writeGapFilePath, err.Error())
 				}
+			case <-doneChan:
+				return
+			}
+		}
+	}()
+
+	// handle writing out errors
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
 			case err := <-errChan:
 				logWithCommand.Errorf("Migrator %s table migration error: %v", tableName, err)
 			case <-doneChan:
