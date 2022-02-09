@@ -8,15 +8,18 @@
     workersPerTable = 10 # $MIGRATION_WORKERS_PER_TABLE
     autoRange = true # $MIGRATION_AUTO_RANGE
     segmentSize = 10000 # $MIGRATION_AUTO_RANGE_SEGMENT_SIZE
+    transferTableName = "v2db_public_blocks" # $TRANSFER_TABLE_NAME
+    pagesPerTx = 1000 # $TRANSFER_SEGMENT_SIZE
 
 [log]
     file = "logfile.txt" # $LOGRUS_FILE
     level = "info" # $LOGRUS_LEVEL
     readGapsDir = "./readGaps/" # $LOG_READ_GAPS_DIR
     writeGapsDir = "./writeGaps/" # $LOG_WRITE_GAPS_DIR
+    transferGapDir = "./transferGaps/" # $LOG_TRANSFER_GAPS_DIR
 
 [old]
-    databaseName = "vulcanize_test_repair" # $OLD_DATABASE_NAME
+    databaseName = "vulcanize_v2" # $OLD_DATABASE_NAME
     databaseHostName = "localhost" # $OLD_DATABASE_HOSTNAME
     databasePort = "5432" # $OLD_DATABASE_PORT
     databaseUser = "postgres" # $OLD_DATABASE_USER
@@ -26,7 +29,7 @@
     databaseMaxConnLifetime = 0 # $OLD_DATABASE_MAX_CONN_LIFETIME
 
 [new]
-    databaseName = "vulcanize_test_repair" # $NEW_DATABASE_NAME
+    databaseName = "vulcanize_v3" # $NEW_DATABASE_NAME
     databaseHostName = "localhost" # $NEW_DATABASE_HOSTNAME
     databasePort = "5432" # $NEW_DATABASE_PORT
     databaseUser = "postgres" # $NEW_DATABASE_USER
