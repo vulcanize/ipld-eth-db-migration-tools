@@ -271,6 +271,7 @@ func (s *Service) Transfer(wg *sync.WaitGroup, fdwTableName string, segmentSize 
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	logrus.Infof("max page number found for table %s: %d", fdwTableName, maxPage)
 
 	doneChan := make(chan struct{})
 	segments := public_blocks.GetPageSegments(maxPage, segmentSize)
