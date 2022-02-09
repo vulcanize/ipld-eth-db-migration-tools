@@ -23,10 +23,12 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/vulcanize/migration-tools/pkg/csv"
-	"github.com/vulcanize/migration-tools/pkg/sql"
-
+	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
+
+	"github.com/vulcanize/migration-tools/pkg/csv"
+	"github.com/vulcanize/migration-tools/pkg/public_blocks"
+	"github.com/vulcanize/migration-tools/pkg/sql"
 )
 
 const defaultNumWorkersPerTable = 1
@@ -34,13 +36,16 @@ const defaultNumWorkersPerTable = 1
 // Migrator interface for migrating from v2 DB to v3 DB
 type Migrator interface {
 	Migrate(wg *sync.WaitGroup, tableName TableName, blockRanges <-chan [2]uint64) (chan [2]uint64, chan [2]uint64, chan struct{}, chan struct{}, chan error)
+	Transfer(wg *sync.WaitGroup, fdwTableName string, segmentSize uint64) (chan [2]uint64, chan struct{}, chan error, error)
+	TransformToCSV(csvWriter csv.Writer, wg *sync.WaitGroup, tableName TableName, blockRanges <-chan [2]uint64) (chan [2]uint64, chan [2]uint64, chan struct{}, chan struct{}, chan error)
 	io.Closer
 }
 
 // Service struct underpinning the Migrator interface
 type Service struct {
-	reader *Reader
-	writer *sql.Writer
+	reader       *Reader
+	writer       *sql.Writer
+	oldDB, newDB *sqlx.DB
 
 	wg                 *sync.WaitGroup
 	closeChan          chan struct{}
@@ -64,12 +69,19 @@ func NewMigrator(ctx context.Context, conf *Config) (Migrator, error) {
 	return &Service{
 		reader:             NewReader(readDB),
 		writer:             sql.NewWriter(writeDB),
+		oldDB:              readDB,
+		newDB:              writeDB,
 		closeChan:          make(chan struct{}),
 		numWorkersPerTable: numWorkers,
 	}, nil
 }
 
-func (s *Service) TransformToCSV(csvWriter csv.Writer, wg *sync.WaitGroup, tableName TableName, blockRanges <-chan [2]uint64) (chan [2]uint64, chan [2]uint64, chan struct{}, chan struct{}, chan error) {
+// TransformToCSV satisfies Migrator
+// TransformToCSV spins up a goroutine to process the block ranges provided through the blockRanges work chan for the specified tables
+// TransformToCSV returns a channel for emitting read gaps and failed write ranges, a channel for signaling completion
+// of the process, a quitChan for closing the single process, and a channel for writing out errors
+func (s *Service) TransformToCSV(csvWriter csv.Writer, wg *sync.WaitGroup, tableName TableName,
+	blockRanges <-chan [2]uint64) (chan [2]uint64, chan [2]uint64, chan struct{}, chan struct{}, chan error) {
 	quitChan := make(chan struct{})
 	doneChan := make(chan struct{})
 	transformer := NewTableTransformer(tableName)
@@ -156,9 +168,10 @@ func (s *Service) TransformToCSV(csvWriter csv.Writer, wg *sync.WaitGroup, table
 
 // Migrate satisfies Migrator
 // Migrate spins up a goroutine to process the block ranges provided through the blockRanges work chan for the specified tables
-// Migrate returns a channel for emitting read gaps and failed write ranges, a quitChan for closing the process once we
-// are sending it ranges to process, a channel for signalling successful shutdown of the process, and a channel for writing out errors
-func (s *Service) Migrate(wg *sync.WaitGroup, tableName TableName, blockRanges <-chan [2]uint64) (chan [2]uint64, chan [2]uint64, chan struct{}, chan struct{}, chan error) {
+// Migrate returns a channel for emitting read gaps and failed write ranges, a channel for signaling
+// completion of the process, a quitChan for closing the single process, and a channel for writing out errors
+func (s *Service) Migrate(wg *sync.WaitGroup, tableName TableName, blockRanges <-chan [2]uint64) (chan [2]uint64,
+	chan [2]uint64, chan struct{}, chan struct{}, chan error) {
 	quitChan := make(chan struct{})
 	doneChan := make(chan struct{})
 	transformer := NewTableTransformer(tableName)
@@ -241,6 +254,48 @@ func (s *Service) Migrate(wg *sync.WaitGroup, tableName TableName, blockRanges <
 	}()
 
 	return readGapChan, writeGapChan, doneChan, quitChan, errChan
+}
+
+// Transfer for transferring public.blocks to a new DB page-by-page
+// Transfer assumes the targeted postgres_fdw is already in the db
+// returns a chan for logging failed transfer page ranges, a chan for the errors that caused them,
+// a chan for signalling success, and any error during initialization
+func (s *Service) Transfer(wg *sync.WaitGroup, fdwTableName string, segmentSize uint64) (chan [2]uint64,
+	chan struct{}, chan error, error) {
+	db := s.newDB
+	if fdwTableName == "" {
+		fdwTableName = public_blocks.DefaultV2FDWTableName
+	}
+
+	maxPage, err := public_blocks.GetMaxPage(db)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	doneChan := make(chan struct{})
+	segments := public_blocks.GetPageSegments(maxPage, segmentSize)
+	errChan := make(chan error)
+	transferFailChan := make(chan [2]uint64)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer close(doneChan)
+		for _, segment := range segments {
+			select {
+			case <-s.closeChan:
+				logrus.Infof("quitting transfer process for table %s", fdwTableName)
+				return
+			default:
+			}
+			logrus.Infof("transfer %s page range (%d, %d) from old DV to new DB", fdwTableName, segment[0], segment[1])
+			if err := public_blocks.TransferPages(db, fdwTableName, segment[0], segment[1]); err != nil {
+				errChan <- fmt.Errorf("failed to transfer %s page range (%d, %d): %v", fdwTableName, segment[0], segment[1], err)
+				transferFailChan <- segment
+			}
+		}
+	}()
+	return transferFailChan, doneChan, errChan, nil
 }
 
 // Close satisfied io.Closer

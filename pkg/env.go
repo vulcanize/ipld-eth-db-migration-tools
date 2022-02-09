@@ -31,6 +31,10 @@ const (
 	MIGRATION_AUTO_RANGE              = "MIGRATION_AUTO_RANGE"
 	MIGRATION_AUTO_RANGE_SEGMENT_SIZE = "MIGRATION_AUTO_RANGE_SEGMENT_SIZE"
 
+	TRANSFER_TABLE_NAME   = "TRANSFER_TABLE_NAME"
+	TRANSFER_SEGMENT_SIZE = "TRANSFER_SEGMENT_SIZE"
+	LOG_TRANSFER_GAPS_DIR = "LOG_TRANSFER_GAPS_DIR"
+
 	OLD_DATABASE_NAME                 = "OLD_DATABASE_NAME"
 	OLD_DATABASE_HOSTNAME             = "OLD_DATABASE_HOSTNAME"
 	OLD_DATABASE_PORT                 = "OLD_DATABASE_PORT"
@@ -61,10 +65,14 @@ const (
 	TOML_MIGRATION_RANGES                  = "migrator.ranges"
 	TOML_MIGRATION_START                   = "migrator.start"
 	TOML_MIGRATION_STOP                    = "migrator.stop"
-	TOML_MIGRATION_TABLE_NAMES             = "migrator.tableNames"
+	TOML_MIGRATION_TABLE_NAMES             = "migrator.migrationTableNames"
 	TOML_MIGRATION_WORKERS_PER_TABLE       = "migrator.workersPerTable"
 	TOML_MIGRATION_AUTO_RANGE              = "migrator.autoRange"
 	TOML_MIGRATION_AUTO_RANGE_SEGMENT_SIZE = "migrator.segmentSize"
+
+	TOML_TRANSFER_TABLE_NAME   = "migrator.transferTableName"
+	TOML_TRANSFER_SEGMENT_SIZE = "migrator.pagesPerTx"
+	TOML_LOG_TRANSFER_GAPS_DIR = "migrator.transferGapDir"
 
 	TOML_OLD_DATABASE_NAME                 = "v2.databaseName"
 	TOML_OLD_DATABASE_HOSTNAME             = "v2.databaseHostName"
@@ -95,10 +103,14 @@ const (
 
 	CLI_MIGRATION_START                   = "start-height"
 	CLI_MIGRATION_STOP                    = "stop-height"
-	CLI_MIGRATION_TABLE_NAMES             = "table-names"
+	CLI_MIGRATION_TABLE_NAMES             = "migration-table-names"
 	CLI_MIGRATION_WORKERS_PER_TABLE       = "workers-per-table"
 	CLI_MIGRATION_AUTO_RANGE              = "auto-range"
-	CLI_MIGRATION_AUTO_RANGE_SEGMENT_SIZE = "segment-size"
+	CLI_MIGRATION_AUTO_RANGE_SEGMENT_SIZE = "migration-segment-size"
+
+	CLI_TRANSFER_TABLE_NAME   = "transfer-table-name"
+	CLI_TRANSFER_SEGMENT_SIZE = "transfer-segment-size"
+	CLI_LOG_TRANSFER_GAPS_DIR = "transfer-gap-dir"
 
 	CLI_OLD_DATABASE_NAME                 = "v2-db-name"
 	CLI_OLD_DATABASE_HOSTNAME             = "v2-db-hostname"
