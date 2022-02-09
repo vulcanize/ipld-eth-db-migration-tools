@@ -14,13 +14,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_nodes
+package csv
 
-// NodeModel is the v2 and v3 model for public.nodes
-type NodeModel struct {
-	GenesisBlock string `db:"genesis_block"`
-	NetworkID    string `db:"network_id"`
-	NodeID       string `db:"node_id"`
-	ClientName   string `db:"client_name"`
-	ChainID      int    `db:"chain_id"`
+import (
+	"io"
+)
+
+// Writer interface for writing v3 models to csv files
+type Writer interface {
+	Write(pgStr WriteCSVStr, models interface{}) error
+	io.Closer
 }

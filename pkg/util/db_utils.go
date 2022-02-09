@@ -14,32 +14,16 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package migration_tools
+package util
 
 import (
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 )
 
-// Writer struct for writing v3 DB public.nodes models
-type Writer struct {
-	db *sqlx.DB
-}
-
-// NewWriter satisfies interfaces.WriterConstructor for public.nodes
-func NewWriter(db *sqlx.DB) *Writer {
-	return &Writer{db: db}
-}
-
-// Write satisfies interfaces.Writer for public.nodes
-func (w *Writer) Write(pgStr WritePgStr, models interface{}) error {
-	rows, err := w.db.NamedQuery(string(pgStr), models)
-	if err != nil {
-		return err
+// Rollback sql transaction and log any error
+func Rollback(tx *sqlx.Tx) {
+	if err := tx.Rollback(); err != nil {
+		logrus.Error(err.Error())
 	}
-	return rows.Close()
-}
-
-// Close satisfies io.Closer
-func (w *Writer) Close() error {
-	return w.db.Close()
 }

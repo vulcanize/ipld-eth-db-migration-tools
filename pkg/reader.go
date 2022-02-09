@@ -18,17 +18,8 @@ package migration_tools
 
 import (
 	"github.com/jmoiron/sqlx"
+	"github.com/vulcanize/migration-tools/pkg/sql"
 )
-
-const subChannelBufferSize = 1024
-
-func NewSubChannelSet(tables []TableName) map[TableName]chan [2]uint64 {
-	subChans := make(map[TableName]chan [2]uint64, len(tables))
-	for _, tableName := range tables {
-		subChans[tableName] = make(chan [2]uint64, subChannelBufferSize)
-	}
-	return subChans
-}
 
 // Reader struct for reading v2 DB eth.log_cids models
 type Reader struct {
@@ -42,7 +33,7 @@ func NewReader(db *sqlx.DB) *Reader {
 
 // Read satisfies interfaces.Reader for eth.log_cids
 // Read is safe for concurrent use, as the only shared state is the concurrent safe *sqlx.DB
-func (r *Reader) Read(blockRange [2]uint64, pgStr ReadPgStr, models interface{}) error {
+func (r *Reader) Read(blockRange [2]uint64, pgStr sql.ReadPgStr, models interface{}) error {
 	return r.db.Select(models, string(pgStr), blockRange[0], blockRange[1])
 }
 

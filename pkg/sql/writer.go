@@ -14,13 +14,32 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package public_nodes
+package sql
 
-// NodeModel is the v2 and v3 model for public.nodes
-type NodeModel struct {
-	GenesisBlock string `db:"genesis_block"`
-	NetworkID    string `db:"network_id"`
-	NodeID       string `db:"node_id"`
-	ClientName   string `db:"client_name"`
-	ChainID      int    `db:"chain_id"`
+import (
+	"github.com/jmoiron/sqlx"
+)
+
+// Writer struct for writing v3 DB public.nodes models
+type Writer struct {
+	db *sqlx.DB
+}
+
+// NewWriter satisfies interfaces.WriterConstructor for public.nodes
+func NewWriter(db *sqlx.DB) *Writer {
+	return &Writer{db: db}
+}
+
+// Write satisfies interfaces.Writer for v3 database
+func (w *Writer) Write(pgStr WritePgStr, models interface{}) error {
+	rows, err := w.db.NamedQuery(string(pgStr), models)
+	if err != nil {
+		return err
+	}
+	return rows.Close()
+}
+
+// Close satisfies io.Closer
+func (w *Writer) Close() error {
+	return w.db.Close()
 }

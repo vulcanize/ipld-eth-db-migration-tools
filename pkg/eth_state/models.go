@@ -39,10 +39,10 @@ type StateModelV2 struct {
 // StateModelV3 is the db model for eth.state_cids for v3 DB
 type StateModelV3 struct {
 	HeaderID string `db:"header_id"`
-	Path     []byte `db:"state_path"`
 	StateKey string `db:"state_leaf_key"`
-	NodeType int    `db:"node_type"`
 	CID      string `db:"cid"`
-	MhKey    string `db:"mh_key"`
+	Path     []byte `db:"state_path"`
+	NodeType int    `db:"node_type"`
 	Diff     bool   `db:"diff"`
+	MhKey    string `db:"mh_key"`
 }

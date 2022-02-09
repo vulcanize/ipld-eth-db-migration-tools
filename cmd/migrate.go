@@ -38,9 +38,9 @@ import (
 // migrateCmd represents the migrate command
 var migrateCmd = &cobra.Command{
 	Use:   "migrate",
-	Short: "Tool for migrating v2 DB to v3 DB",
-	Long: `Tool for reading data from a v2 database, transforming them into v3 DB models,
-and writing them to a v3 database.
+	Short: "Tool for migrating old DB to new DB",
+	Long: `Tool for reading data from a old database, transforming them into new DB models,
+and writing them to a new database.
 
 Can be configured to work over a subset of the tables, and over specific block ranges.
 
@@ -53,6 +53,7 @@ While processing headers, state, or state accounts it checks for gaps in the dat
 }
 
 func migrate() {
+	logWithCommand.Info("----- running migration -----")
 	conf := migration_tools.NewConfig()
 	logWithCommand.Infof("initializing a new Migrator with config params: %+v", conf)
 	migrator, err := migration_tools.NewMigrator(context.Background(), conf)
@@ -169,7 +170,7 @@ func migrateTable(wg *sync.WaitGroup, migrator migration_tools.Migrator,
 					logWithCommand.Errorf("error writing write gap to file at %s; err: %s", writeGapFilePath, err.Error())
 				}
 			case err := <-errChan:
-				logWithCommand.Errorf("Migrator %s table error: %v", tableName, err)
+				logWithCommand.Errorf("Migrator %s table migration error: %v", tableName, err)
 			case <-doneChan:
 				return
 			}
@@ -224,10 +225,6 @@ func getRanges(readConf postgres.Config) ([][2]uint64, error) {
 func init() {
 	rootCmd.AddCommand(migrateCmd)
 
-	// log flags
-	migrateCmd.PersistentFlags().String(migration_tools.CLI_LOG_READ_GAPS_DIR, "./readGaps/", "directory to write out read gaps to")
-	migrateCmd.PersistentFlags().String(migration_tools.CLI_LOG_WRITE_GAPS_DIR, "./writeGaps/", "directory to write out write gaps to")
-
 	// migrator flags
 	migrateCmd.PersistentFlags().Uint64(migration_tools.CLI_MIGRATION_START, 0, "start height")
 	migrateCmd.PersistentFlags().Uint64(migration_tools.CLI_MIGRATION_STOP, 0, "stop height")
@@ -236,30 +233,6 @@ func init() {
 	migrateCmd.PersistentFlags().Bool(migration_tools.CLI_MIGRATION_AUTO_RANGE, false, "turn on or off auto range detection and chunking")
 	migrateCmd.PersistentFlags().Uint64(migration_tools.CLI_MIGRATION_AUTO_RANGE_SEGMENT_SIZE, 0, "segment size for auto range detection and chunking")
 
-	// v2 db flags
-	migrateCmd.PersistentFlags().String(migration_tools.CLI_V2_DATABASE_NAME, "vulcanize_v2", "name for the v2 database")
-	migrateCmd.PersistentFlags().String(migration_tools.CLI_V2_DATABASE_HOSTNAME, "localhost", "hostname for the v2 database")
-	migrateCmd.PersistentFlags().String(migration_tools.CLI_V2_DATABASE_PORT, "5432", "port for the v2 database")
-	migrateCmd.PersistentFlags().String(migration_tools.CLI_V2_DATABASE_USER, "postgres", "username to use with the v2 database")
-	migrateCmd.PersistentFlags().String(migration_tools.CLI_V2_DATABASE_PASSWORD, "", "password to use for the v2 database")
-	migrateCmd.PersistentFlags().Int(migration_tools.CLI_V2_DATABASE_MAX_IDLE_CONNECTIONS, 0, "max idle connections for the v2 database")
-	migrateCmd.PersistentFlags().Int(migration_tools.CLI_V2_DATABASE_MAX_OPEN_CONNECTIONS, 0, "max open connections for the v2 database")
-	migrateCmd.PersistentFlags().Duration(migration_tools.CLI_V2_DATABASE_MAX_CONN_LIFETIME, 0, "max connection lifetime for the v2 database")
-
-	// v3 db flags
-	migrateCmd.PersistentFlags().String(migration_tools.CLI_V3_DATABASE_NAME, "vulcanize_v3", "name for the v3 database")
-	migrateCmd.PersistentFlags().String(migration_tools.CLI_V3_DATABASE_HOSTNAME, "localhost", "hostname for the v3 database")
-	migrateCmd.PersistentFlags().String(migration_tools.CLI_V3_DATABASE_PORT, "5432", "port for the v3 database")
-	migrateCmd.PersistentFlags().String(migration_tools.CLI_V3_DATABASE_USER, "postgres", "username to use with the v3 database")
-	migrateCmd.PersistentFlags().String(migration_tools.CLI_V3_DATABASE_PASSWORD, "", "password to use for the v3 database")
-	migrateCmd.PersistentFlags().Int(migration_tools.CLI_V3_DATABASE_MAX_IDLE_CONNECTIONS, 0, "max idle connections for the v3 database")
-	migrateCmd.PersistentFlags().Int(migration_tools.CLI_V3_DATABASE_MAX_OPEN_CONNECTIONS, 0, "max open connections for the v3 database")
-	migrateCmd.PersistentFlags().Duration(migration_tools.CLI_V3_DATABASE_MAX_CONN_LIFETIME, 0, "max connection lifetime for the v3 database")
-
-	// log TOML bindings
-	viper.BindPFlag(migration_tools.TOML_LOG_READ_GAPS_DIR, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_LOG_READ_GAPS_DIR))
-	viper.BindPFlag(migration_tools.TOML_LOG_WRITE_GAPS_DIR, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_LOG_WRITE_GAPS_DIR))
-
 	// migrator TOML bindings
 	viper.BindPFlag(migration_tools.TOML_MIGRATION_START, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_MIGRATION_START))
 	viper.BindPFlag(migration_tools.TOML_MIGRATION_STOP, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_MIGRATION_STOP))
@@ -267,24 +240,4 @@ func init() {
 	viper.BindPFlag(migration_tools.TOML_MIGRATION_WORKERS_PER_TABLE, migrateCmd.PersistentFlags().Lookup(migration_tools.TOML_MIGRATION_WORKERS_PER_TABLE))
 	viper.BindPFlag(migration_tools.TOML_MIGRATION_AUTO_RANGE, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_MIGRATION_AUTO_RANGE))
 	viper.BindPFlag(migration_tools.TOML_MIGRATION_AUTO_RANGE_SEGMENT_SIZE, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_MIGRATION_AUTO_RANGE_SEGMENT_SIZE))
-
-	// v2 db TOML bindings
-	viper.BindPFlag(migration_tools.TOML_V2_DATABASE_NAME, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V2_DATABASE_NAME))
-	viper.BindPFlag(migration_tools.TOML_V2_DATABASE_HOSTNAME, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V2_DATABASE_HOSTNAME))
-	viper.BindPFlag(migration_tools.TOML_V2_DATABASE_PORT, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_PORT))
-	viper.BindPFlag(migration_tools.TOML_V2_DATABASE_USER, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_USER))
-	viper.BindPFlag(migration_tools.TOML_V2_DATABASE_PASSWORD, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V2_DATABASE_PASSWORD))
-	viper.BindPFlag(migration_tools.TOML_V2_DATABASE_MAX_IDLE_CONNECTIONS, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V2_DATABASE_MAX_IDLE_CONNECTIONS))
-	viper.BindPFlag(migration_tools.TOML_V2_DATABASE_MAX_OPEN_CONNECTIONS, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V2_DATABASE_MAX_OPEN_CONNECTIONS))
-	viper.BindPFlag(migration_tools.TOML_V2_DATABASE_MAX_CONN_LIFETIME, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V2_DATABASE_MAX_CONN_LIFETIME))
-
-	// v3 db TOML bindings
-	viper.BindPFlag(migration_tools.TOML_V3_DATABASE_NAME, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_NAME))
-	viper.BindPFlag(migration_tools.TOML_V3_DATABASE_HOSTNAME, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_HOSTNAME))
-	viper.BindPFlag(migration_tools.TOML_V3_DATABASE_PORT, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_PORT))
-	viper.BindPFlag(migration_tools.TOML_V3_DATABASE_USER, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_USER))
-	viper.BindPFlag(migration_tools.TOML_V3_DATABASE_PASSWORD, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_PASSWORD))
-	viper.BindPFlag(migration_tools.TOML_V3_DATABASE_MAX_IDLE_CONNECTIONS, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_MAX_IDLE_CONNECTIONS))
-	viper.BindPFlag(migration_tools.TOML_V3_DATABASE_MAX_OPEN_CONNECTIONS, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_MAX_OPEN_CONNECTIONS))
-	viper.BindPFlag(migration_tools.TOML_V3_DATABASE_MAX_CONN_LIFETIME, migrateCmd.PersistentFlags().Lookup(migration_tools.CLI_V3_DATABASE_MAX_CONN_LIFETIME))
 }

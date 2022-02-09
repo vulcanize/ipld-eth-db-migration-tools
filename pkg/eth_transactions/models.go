@@ -41,12 +41,12 @@ type TransactionModelV2 struct {
 // TransactionModelV3 is the db model for eth.transaction_cids for v3 DB
 type TransactionModelV3 struct {
 	HeaderID string `db:"header_id"`
-	Index    int64  `db:"index"`
 	TxHash   string `db:"tx_hash"`
 	CID      string `db:"cid"`
-	MhKey    string `db:"mh_key"`
 	Dst      string `db:"dst"`
 	Src      string `db:"src"`
+	Index    int64  `db:"index"`
+	MhKey    string `db:"mh_key"`
 	Data     []byte `db:"tx_data"`
 	Type     uint8  `db:"tx_type"`
 	Value    string `db:"value"`

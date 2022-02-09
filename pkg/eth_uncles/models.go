@@ -36,10 +36,10 @@ type UncleModelV2 struct {
 
 // UncleModelV3 is the db model for eth.uncle_cids for v3 DB
 type UncleModelV3 struct {
-	HeaderID   string `db:"header_id"`
 	BlockHash  string `db:"block_hash"`
+	HeaderID   string `db:"header_id"`
 	ParentHash string `db:"parent_hash"`
 	CID        string `db:"cid"`
-	MhKey      string `db:"mh_key"`
 	Reward     string `db:"reward"`
+	MhKey      string `db:"mh_key"`
 }

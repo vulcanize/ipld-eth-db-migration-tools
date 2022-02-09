@@ -40,10 +40,10 @@ type ReceiptModelV2 struct {
 type ReceiptModelV3 struct {
 	TxID         string `db:"tx_id"`
 	LeafCID      string `db:"leaf_cid"`
-	LeafMhKey    string `db:"leaf_mh_key"`
-	PostStatus   uint64 `db:"post_status"`
-	PostState    string `db:"post_state"`
 	Contract     string `db:"contract"`
 	ContractHash string `db:"contract_hash"`
+	LeafMhKey    string `db:"leaf_mh_key"`
+	PostState    string `db:"post_state"`
+	PostStatus   uint64 `db:"post_status"`
 	LogRoot      string `db:"log_root"`
 }
