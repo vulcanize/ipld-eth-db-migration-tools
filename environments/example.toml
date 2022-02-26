@@ -10,6 +10,8 @@
     segmentSize = 10000 # $MIGRATION_AUTO_RANGE_SEGMENT_SIZE
     transferTableName = "v2db_public_blocks" # $TRANSFER_TABLE_NAME
     pagesPerTx = 1000 # $TRANSFER_SEGMENT_SIZE
+    segmentOffset = 0 # $TRANSFER_SEGMENT_OFFSET
+    maxPage = 0 # $TRANSFER_MAX_PAGE
 
 [log]
     file = "logfile.txt" # $LOGRUS_FILE

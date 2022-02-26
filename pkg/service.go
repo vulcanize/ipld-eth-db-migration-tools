@@ -36,7 +36,7 @@ const defaultNumWorkersPerTable = 1
 // Migrator interface for migrating from v2 DB to v3 DB
 type Migrator interface {
 	Migrate(wg *sync.WaitGroup, tableName TableName, blockRanges <-chan [2]uint64) (chan [2]uint64, chan [2]uint64, chan struct{}, chan struct{}, chan error)
-	Transfer(wg *sync.WaitGroup, fdwTableName string, segmentSize uint64) (chan [2]uint64, chan struct{}, chan error, error)
+	Transfer(wg *sync.WaitGroup, fdwTableName string, segmentSize, segmentOffset, maxPage uint64) (chan [2]uint64, chan struct{}, chan error, error)
 	TransformToCSV(csvWriter csv.Writer, wg *sync.WaitGroup, tableName TableName, blockRanges <-chan [2]uint64) (chan [2]uint64, chan [2]uint64, chan struct{}, chan struct{}, chan error)
 	io.Closer
 }
@@ -260,21 +260,28 @@ func (s *Service) Migrate(wg *sync.WaitGroup, tableName TableName, blockRanges <
 // Transfer assumes the targeted postgres_fdw is already in the db
 // returns a chan for logging failed transfer page ranges, a chan for the errors that caused them,
 // a chan for signalling success, and any error during initialization
-func (s *Service) Transfer(wg *sync.WaitGroup, fdwTableName string, segmentSize uint64) (chan [2]uint64,
+func (s *Service) Transfer(wg *sync.WaitGroup, fdwTableName string, segmentSize, segmentOffset, maxPage uint64) (chan [2]uint64,
 	chan struct{}, chan error, error) {
 	db := s.newDB
 	if fdwTableName == "" {
 		fdwTableName = public_blocks.DefaultV2FDWTableName
 	}
-
-	maxPage, err := public_blocks.GetMaxPage(db, fdwTableName)
-	if err != nil {
-		return nil, nil, nil, err
+	var err error
+	if maxPage == 0 {
+		maxPage, err = public_blocks.GetMaxPage(db, fdwTableName)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		logrus.Infof("max page number found for table %s: %d", fdwTableName, maxPage)
+	} else {
+		logrus.Infof("using pre-configured max page number for table %s: %d", fdwTableName, maxPage)
 	}
-	logrus.Infof("max page number found for table %s: %d", fdwTableName, maxPage)
 
 	doneChan := make(chan struct{})
 	segments := public_blocks.GetPageSegments(maxPage, segmentSize)
+	if segmentOffset < uint64(len(segments)) {
+		segments = segments[segmentOffset:]
+	}
 	errChan := make(chan error)
 	transferFailChan := make(chan [2]uint64)
 
@@ -282,16 +289,21 @@ func (s *Service) Transfer(wg *sync.WaitGroup, fdwTableName string, segmentSize 
 	go func() {
 		defer wg.Done()
 		defer close(doneChan)
-		for _, segment := range segments {
+		for i, segment := range segments {
+			segNum := uint64(i) + segmentOffset
 			select {
 			case <-s.closeChan:
 				logrus.Infof("quitting transfer process for table %s", fdwTableName)
+				logrus.Infof("was about to transfer %s segment #%d page range (%d, %d)", fdwTableName, segNum,
+					segment[0], segment[1])
 				return
 			default:
 			}
-			logrus.Infof("transfer %s page range (%d, %d) from old DB to new DB", fdwTableName, segment[0], segment[1])
+			logrus.Infof("transfering %s segment #%d page range (%d, %d) from old DB to new DB", fdwTableName,
+				segNum, segment[0], segment[1])
 			if err := public_blocks.TransferPages(db, fdwTableName, segment[0], segment[1]); err != nil {
-				errChan <- fmt.Errorf("failed to transfer %s page range (%d, %d): %v", fdwTableName, segment[0], segment[1], err)
+				errChan <- fmt.Errorf("failed to transfer %s segment #%d page range (%d, %d): %v", fdwTableName,
+					segNum, segment[0], segment[1], err)
 				transferFailChan <- segment
 			}
 		}

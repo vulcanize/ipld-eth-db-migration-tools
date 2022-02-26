@@ -31,8 +31,10 @@ const (
 	MIGRATION_AUTO_RANGE              = "MIGRATION_AUTO_RANGE"
 	MIGRATION_AUTO_RANGE_SEGMENT_SIZE = "MIGRATION_AUTO_RANGE_SEGMENT_SIZE"
 
-	TRANSFER_TABLE_NAME   = "TRANSFER_TABLE_NAME"
-	TRANSFER_SEGMENT_SIZE = "TRANSFER_SEGMENT_SIZE"
+	TRANSFER_TABLE_NAME     = "TRANSFER_TABLE_NAME"
+	TRANSFER_SEGMENT_SIZE   = "TRANSFER_SEGMENT_SIZE"
+	TRANSFER_SEGMENT_OFFSET = "TRANSFER_SEGMENT_OFFSET"
+	TRANSFER_MAX_PAGE       = "TRANSFER_MAX_PAGE"
 
 	OLD_DATABASE_NAME                 = "OLD_DATABASE_NAME"
 	OLD_DATABASE_HOSTNAME             = "OLD_DATABASE_HOSTNAME"
@@ -68,8 +70,11 @@ const (
 	TOML_MIGRATION_WORKERS_PER_TABLE       = "migrator.workersPerTable"
 	TOML_MIGRATION_AUTO_RANGE              = "migrator.autoRange"
 	TOML_MIGRATION_AUTO_RANGE_SEGMENT_SIZE = "migrator.segmentSize"
-	TOML_TRANSFER_TABLE_NAME               = "migrator.transferTableName"
-	TOML_TRANSFER_SEGMENT_SIZE             = "migrator.pagesPerTx"
+
+	TOML_TRANSFER_TABLE_NAME     = "migrator.transferTableName"
+	TOML_TRANSFER_SEGMENT_SIZE   = "migrator.pagesPerTx"
+	TOML_TRANSFER_SEGMENT_OFFSET = "migrator.segmentOffset"
+	TOML_TRANSFER_MAX_PAGE       = "migrator.maxPage"
 
 	TOML_OLD_DATABASE_NAME                 = "old.databaseName"
 	TOML_OLD_DATABASE_HOSTNAME             = "old.databaseHostName"
@@ -105,8 +110,10 @@ const (
 	CLI_MIGRATION_AUTO_RANGE              = "auto-range"
 	CLI_MIGRATION_AUTO_RANGE_SEGMENT_SIZE = "migration-segment-size"
 
-	CLI_TRANSFER_TABLE_NAME   = "transfer-table-name"
-	CLI_TRANSFER_SEGMENT_SIZE = "transfer-segment-size"
+	CLI_TRANSFER_TABLE_NAME     = "transfer-table-name"
+	CLI_TRANSFER_SEGMENT_SIZE   = "transfer-segment-size"
+	CLI_TRANSFER_SEGMENT_OFFSET = "transfer-segment-offset"
+	CLI_TRANSFER_MAX_PAGE       = "transfer-max-page"
 
 	CLI_OLD_DATABASE_NAME                 = "old-db-name"
 	CLI_OLD_DATABASE_HOSTNAME             = "old-db-hostname"

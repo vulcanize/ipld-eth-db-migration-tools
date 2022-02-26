@@ -66,9 +66,13 @@ func transfer() {
 	wg := new(sync.WaitGroup)
 	viper.BindEnv(migration_tools.TOML_TRANSFER_TABLE_NAME, migration_tools.TRANSFER_TABLE_NAME)
 	viper.BindEnv(migration_tools.TOML_TRANSFER_SEGMENT_SIZE, migration_tools.TRANSFER_SEGMENT_SIZE)
+	viper.BindEnv(migration_tools.TOML_TRANSFER_SEGMENT_OFFSET, migration_tools.TRANSFER_SEGMENT_OFFSET)
+	viper.BindEnv(migration_tools.TOML_TRANSFER_MAX_PAGE, migration_tools.TRANSFER_MAX_PAGE)
 	transferTable(wg, transferor,
 		viper.GetString(migration_tools.TOML_TRANSFER_TABLE_NAME),
-		viper.GetUint64(migration_tools.TOML_TRANSFER_SEGMENT_SIZE))
+		viper.GetUint64(migration_tools.TOML_TRANSFER_SEGMENT_SIZE),
+		viper.GetUint64(migration_tools.TOML_TRANSFER_SEGMENT_OFFSET),
+		viper.GetUint64(migration_tools.TOML_TRANSFER_MAX_PAGE))
 
 	go func() {
 		shutdown := make(chan os.Signal, 1)
@@ -92,7 +96,8 @@ func getTransferGapDir() error {
 	return nil
 }
 
-func transferTable(wg *sync.WaitGroup, transferor migration_tools.Migrator, tableName string, segmentSize uint64) {
+func transferTable(wg *sync.WaitGroup, transferor migration_tools.Migrator, tableName string,
+	segmentSize, segmentOffset, maxPage uint64) {
 	now := time.Now().Unix()
 	transferGapFilePath := filepath.Join(transferGapDir, string(tableName)+"_"+strconv.Itoa(int(now)))
 	transferGapFile, err := os.OpenFile(transferGapFilePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
@@ -101,7 +106,7 @@ func transferTable(wg *sync.WaitGroup, transferor migration_tools.Migrator, tabl
 		logWithCommand.Fatalf("unable to open transfer gap file at %s", transferGapFilePath)
 	}
 
-	gapChan, doneChan, errChan, err := transferor.Transfer(wg, tableName, segmentSize)
+	gapChan, doneChan, errChan, err := transferor.Transfer(wg, tableName, segmentSize, segmentOffset, maxPage)
 	if err != nil {
 		logWithCommand.Fatalf("transfer initialization failed: %v", err)
 	}
@@ -145,8 +150,12 @@ func init() {
 	// transferor flags
 	transferCmd.PersistentFlags().Uint64(migration_tools.CLI_TRANSFER_SEGMENT_SIZE, 1000, "number of pages transferred per tx")
 	transferCmd.PersistentFlags().String(migration_tools.CLI_TRANSFER_TABLE_NAME, public_blocks.DefaultV2FDWTableName, "postgres_fdw table name in the new database")
+	transferCmd.PersistentFlags().Uint64(migration_tools.CLI_TRANSFER_MAX_PAGE, 0, "configure the max page; if left 0 then MAX(ctid) is queried from the DB (which can take a long time)")
+	transferCmd.PersistentFlags().Uint64(migration_tools.CLI_TRANSFER_SEGMENT_OFFSET, 0, "starting offset for the number of segments we process (for picking up where a previous process stopped)")
 
 	// transferor TOML bindings
 	viper.BindPFlag(migration_tools.TOML_TRANSFER_SEGMENT_SIZE, transferCmd.PersistentFlags().Lookup(migration_tools.CLI_TRANSFER_SEGMENT_SIZE))
 	viper.BindPFlag(migration_tools.TOML_TRANSFER_TABLE_NAME, transferCmd.PersistentFlags().Lookup(migration_tools.CLI_TRANSFER_TABLE_NAME))
+	viper.BindPFlag(migration_tools.TOML_TRANSFER_MAX_PAGE, transferCmd.PersistentFlags().Lookup(migration_tools.CLI_TRANSFER_MAX_PAGE))
+	viper.BindPFlag(migration_tools.TOML_TRANSFER_SEGMENT_OFFSET, transferCmd.PersistentFlags().Lookup(migration_tools.CLI_TRANSFER_SEGMENT_OFFSET))
 }

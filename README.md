@@ -30,6 +30,8 @@ Example TOML config:
     workersPerTable = 1 # $MIGRATION_WORKERS_PER_TABLE
     autoRange = false # $MIGRATION_AUTO_RANGE
     segmentSize = 10000 # $MIGRATION_AUTO_RANGE_SEGMENT_SIZE
+    segmentOffset = 0 # $TRANSFER_SEGMENT_OFFSET
+    maxPage = 0 # $TRANSFER_MAX_PAGE
 
 [log]
     file = "path/to/log/file" # $LOGRUS_FILE
